@@ -2,7 +2,7 @@
 #include "Drive.h"
 
 // settings made here -> later create a configuration header with defines
-Wheels roboWheels(50.0, 66.5, 1200, 15, 2);
+Encoder roboEncoder(50.0, 66.5, 1200, {15}, {2});
 L298N roboMotors(4000, 8, {17, 18, 16, 2} , {32, 33, 19, 1});
 
 Drive::Drive(){
@@ -14,7 +14,7 @@ Drive::~Drive(){
 }
 
 void Drive::setup(){
-  roboWheels.setup();
+  roboEncoder.setup();
   roboMotors.setup();
 }
 
@@ -86,7 +86,7 @@ void Drive::move(const int direction){
 void Drive::update(double dT, const double vel, const double omega){
 
     // update encoder
-  roboWheels.update();
+  roboEncoder.update();
 
   // calculate singular wheel speeds
   double v_r = (2 * vel + omega * WHEEL_DISTANCE_L) / 2;
@@ -98,14 +98,14 @@ void Drive::update(double dT, const double vel, const double omega){
   // handle pos and neg rotation seperatly
   // left motor
   if(v_l > 0){
-    roboWheels.setCntDir(1, true);
+    roboEncoder.setCntDir(1, true);
     roboMotors.changeDirection(1, motDirection::FORWARD);
-    vl_error = v_l - roboWheels.wheel1.vel;
+    vl_error = v_l - roboEncoder.encoder1.vel;
 
   } else if(v_l < 0){
-    roboWheels.setCntDir(1, false);
+    roboEncoder.setCntDir(1, false);
     roboMotors.changeDirection(1, motDirection::BACKWARD);
-    vl_error = roboWheels.wheel1.vel - v_l;
+    vl_error = roboEncoder.encoder1.vel - v_l;
 
   } else {
     roboMotors.changeDirection(1, motDirection::BREAKING);
@@ -114,15 +114,15 @@ void Drive::update(double dT, const double vel, const double omega){
 
   // left motor
   if(v_r > 0){
-    roboWheels.setCntDir(2, true);
+    roboEncoder.setCntDir(2, true);
     roboMotors.changeDirection(2, motDirection::FORWARD);
-    vr_error = v_r - roboWheels.wheel1.vel;
+    vr_error = v_r - roboEncoder.encoder1.vel;
 
   } else if(v_r < 0){
-    roboWheels.setCntDir(2, false);
+    roboEncoder.setCntDir(2, false);
     roboMotors.changeDirection(2, motDirection::BACKWARD);
-    vr_error = roboWheels.wheel1.vel - v_r;
-
+    vr_error = roboEncoder.encoder1.vel - v_r;
+    
   } else {
     roboMotors.changeDirection(2, motDirection::BREAKING);
     vr_error = 0;
@@ -135,11 +135,11 @@ void Drive::update(double dT, const double vel, const double omega){
   
   #ifdef DEBUG_WHEEL_CONTROLLER_LEFT
     Serial.print(" v_l: ");
-    Serial.print(roboWheels.wheel1.vel);
+    Serial.print(roboEncoder.wheel1.vel);
     Serial.print(" v_l_soll: ");
     Serial.print(v_l);
     Serial.print(" error: ");
-    Serial.print((v_l - roboWheels.wheel1.vel));
+    Serial.print((v_l - roboEncoder.wheel1.vel));
     Serial.print(" out: ");
     Serial.println(outL);
   #endif

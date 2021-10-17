@@ -1,15 +1,23 @@
 
-#ifndef wheels_h__
-#define wheels_h__
+#ifndef Encoder_h__
+#define Encoder_h__
 
 
 #include <Arduino.h>
 
 #define mvAvg_length 5
 
-struct Wheel_struct{
+struct Encoder_pins
+{
+
+  // Encoder has EncA and EncB pins
+  unsigned int encA;
+  unsigned int encB;
+};
+
+struct Encoder_struct{
   //sensor pin (can be any for the esp32 cause function is handled by abstraction matrix)
-  int pin;
+  Encoder_pins enc;
 
   // counts per revolution -> rising and falling edge is measured
   unsigned long cntPerRev;
@@ -37,7 +45,7 @@ struct Wheel_struct{
 
 
 
-class Wheels{
+class Encoder{
 
     public:
       /**
@@ -49,17 +57,17 @@ class Wheels{
        * @param[in] enc1pin sensor pin (can be any for the esp32 because function is handled by hardware abstraction matrix)
        * @param[in] enc2pin sensor pin (can be any for the esp32 because function is handled by hardware abstraction matrix)
       */
-      Wheels(double rate, double wheelDiameter, unsigned long countsPerRevolution, int enc1pin, int enc2pin);
+      Encoder(double rate, double wheelDiameter, unsigned long countsPerRevolution, Encoder_pins enc1, Encoder_pins enc2);
 
       /**
        * Destructor does not do anything
       */
-      ~Wheels();
+      ~Encoder();
 
-      // struct to store date of wheel 1
-      Wheel_struct wheel1;
-      // struct to store date of wheel 2
-      Wheel_struct wheel2;
+      // struct to store date of encoder 1
+      Encoder_struct encoder1;
+      // struct to store date of encoder 2
+      Encoder_struct encoder2;
 
       /**
        * attatch rising and falling edge interrupts to pins
@@ -67,17 +75,17 @@ class Wheels{
       void setup();
 
       /**
-       * update counter, omega, velocity and distance of both wheel structs
+       * update counter, omega, velocity and distance of both encoder structs
       */
       void update();
 
       /**
        * This encoder cant detect rotation direction by itself -> needs to be supplied
        * 
-       * @param[in] wheelNum Wheel number 1 or 2
+       * @param[in] encoderNum encoder number 1 or 2
        * @param[in] forward is rotation direction forward? -> cant detect by itself
       */
-      void setCntDir(unsigned int wheelNum, bool forward);
+      void setCntDir(unsigned int encoderNum, bool forward);
 
       /**
        * print total driven distance to SerialPort
@@ -91,13 +99,13 @@ class Wheels{
       unsigned long previousMillis = 0;
 
       /**
-       * calculate omega, velocity and distance of both wheel structs
+       * calculate omega, velocity and distance of both encoder structs
        * uses elapsed time, measured counters and wheel radius
        * 
-       * @param[in] wheel strcut of the wheels which shall be updated
+       * @param[in] encoder strcut of the encoders which shall be updated
        * @param[in] dT elapsed time since function was called the last time
       */
-      void calculateValues(Wheel_struct & wheel, double dT);
+      void calculateValues(Encoder_struct & encoder, double dT);
       
 
 };
