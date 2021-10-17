@@ -122,7 +122,7 @@ void Drive::update(double dT, const double vel, const double omega){
     roboEncoder.setCntDir(2, false);
     roboMotors.changeDirection(2, motDirection::BACKWARD);
     vr_error = roboEncoder.encoder1.vel - v_r;
-
+    
   } else {
     roboMotors.changeDirection(2, motDirection::BREAKING);
     vr_error = 0;
