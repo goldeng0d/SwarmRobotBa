@@ -11,7 +11,9 @@
 const int ledPin = 2; 
 
 unsigned long lastMillis = 0;
-
+volatile unsigned long ganzezeit = 0;
+int32_t encValueLEFT = 0;
+int32_t encValueRIGHT = 0;
 
 Drive drive;
 
@@ -212,6 +214,7 @@ void onCarInputWebSocketEvent(AsyncWebSocket *server,
       std::getline(ss, key, ',');
       std::getline(ss, value, ',');
       Serial.printf("Key [%s] Value[%s]\n", key.c_str(), value.c_str());
+      //Serial.printf("encoder counter %l\n", drive.getEncoderCounters());
       int valueInt = atoi(value.c_str());
       if (key == "MoveCar")
       {
@@ -262,11 +265,24 @@ void setup(){
 void loop(){
 
   wsCarInput.cleanupClients();
+  
+  // Serial.printf("main loop encvalue = %l\n", enccounter);
   // Serial.printf("SPIRam Total heap %d, SPIRam Free Heap %d\n", ESP.getPsramSize(), ESP.getFreePsram());
 
   //calculate loop time
-  // double dT = (millis() - lastMillis) / 1000.0;
-  // lastMillis = millis();
+   double dT = (millis() - lastMillis) / 1000.0;
+   lastMillis = millis();
+   ganzezeit += (dT*1000);
+   if(ganzezeit >= 50)
+   {
+      //Serial.printf("ganzzeit = %ld \n", ganzezeit);
+      encValueLEFT = drive.getEncoderValueLEFT();
+      encValueRIGHT = drive.getEncoderValueRIGHT();
+      Serial.printf("Encoder Value Left  = %03d \n", encValueLEFT);
+      Serial.printf("Encoder Value Right = %03d \n", encValueRIGHT);
+      //valueInt = Speed from User Interface
+      ganzezeit = 0;
+   }
 
   // if(rosSocket.client.connected()){
 

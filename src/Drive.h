@@ -4,11 +4,11 @@
 
 
 #include <Arduino.h>
-#include "Encoder.h"
+#include "myEncoder.h"
 #include "L298N.h"
 
 
-#define WHEEL_DISTANCE_L 0.140 // 140mm
+#define WHEEL_DISTANCE_L 0.140 // 140mm // our BARobot has ~110mm
 #define UP 1
 #define DOWN 2
 #define LEFT 3
@@ -44,11 +44,16 @@ class Drive{
       void update(double dT, const double vel, const double omega);
       void move(const int direction);
       void setspeed(const int velocity);
+      void setspeedMotorLEFT(const int velocity);
+      void setspeedMotorRIGHT(const int velocity);
+      int32_t getEncoderValueLEFT(void);
+      int32_t getEncoderValueRIGHT(void);
+      void rpmcontrol(int rpm);
 
-          private :
+    private:
 
-          // global variables which needs to be saved globally
-          float iVal_rightWheel;
+      // global variables which needs to be saved globally
+      float iVal_rightWheel;
       float iVal_leftWheel;
 
       /**
@@ -64,6 +69,9 @@ class Drive{
         */
       float PIRegler(float error, float dt, float Kp, float Ki, float high, float low, float &iVal);
 
+
+
+      
 };
 
 #endif
