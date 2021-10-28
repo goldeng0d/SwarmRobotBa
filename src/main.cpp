@@ -22,7 +22,7 @@ volatile int valueInt = 0;
 volatile int speed = 0;
 Drive drive;
 
-uint8_t red, green, blue;
+uint8_t red = 0, green = 0, blue = 0;
 
 double v;
 double w;
@@ -332,9 +332,9 @@ void loop(){
   //  if(ganzezeit >= 50)
   //  {
 
-  ///rpmVorgabe = (speed * RPM_MAX) / 100.0;
-  //Serial.printf("RPM Value vorgabe Haupschleife vor übergabe  = %d \n", (int)rpmVorgabe);
-  //drive.rpmcontrol((unsigned int)rpmVorgabe);
+  rpmVorgabe = (speed * RPM_MAX) / 100.0;
+  Serial.printf("RPM Value vorgabe Haupschleife vor übergabe  = %d \n", (int)rpmVorgabe);
+  drive.rpmcontrol((unsigned int)rpmVorgabe);
   //Serial.printf("ganzzeit = %ld \n", ganzezeit);
   //encValueLEFT = drive.getEncoderValueLEFT();
   //encValueRIGHT = drive.getEncoderValueRIGHT();
