@@ -7,6 +7,10 @@
 #include "Socket2ROS.h"
 #include <iostream>
 #include <sstream>
+#include "FastLED.h"
+
+#define NUM_LEDS 4
+CRGB leds[NUM_LEDS];
 
 const int ledPin = 2; 
 
@@ -14,11 +18,15 @@ unsigned long lastMillis = 0;
 volatile unsigned long ganzezeit = 0;
 int32_t encValueLEFT = 0;
 int32_t encValueRIGHT = 0;
-
+volatile int valueInt = 0;
+volatile int speed = 0;
 Drive drive;
+
+uint8_t red, green, blue;
 
 double v;
 double w;
+volatile double rpmVorgabe;
 
 const char *ssid = "MyWiFiCar";
 const char *password = "12345678";
@@ -122,10 +130,26 @@ const char *htmlHomePage PROGMEM = R"HTMLHOMEPAGE(
         </td>
       </tr>        
       <tr>
-        <td style="text-align:left"><b>Light:</b></td>
+        <td style="text-align:left"><b>RED Light:</b></td>
         <td colspan=2>
           <div class="slidecontainer">
-            <input type="range" min="0" max="255" value="0" class="slider" id="Light" oninput='sendButtonInput("Light",value)'>
+            <input type="range" min="0" max="255" value="0" class="slider" id="RED Light" oninput='sendButtonInput("RED Light",value)'>
+          </div>
+        </td>   
+      </tr>
+      <tr>
+        <td style="text-align:left"><b>GREEN Light:</b></td>
+        <td colspan=2>
+          <div class="slidecontainer">
+            <input type="range" min="0" max="255" value="0" class="slider" id="GREEN Light" oninput='sendButtonInput("GREEN Light",value)'>
+          </div>
+        </td>   
+      </tr>
+      <tr>
+        <td style="text-align:left"><b>BLUE Light:</b></td>
+        <td colspan=2>
+          <div class="slidecontainer">
+            <input type="range" min="0" max="255" value="0" class="slider" id="BLUE Light" oninput='sendButtonInput("BLUE Light",value)'>
           </div>
         </td>   
       </tr>
@@ -142,8 +166,12 @@ const char *htmlHomePage PROGMEM = R"HTMLHOMEPAGE(
         {
           var speedButton = document.getElementById("Speed");
           sendButtonInput("Speed", speedButton.value);
-          var lightButton = document.getElementById("Light");
-          sendButtonInput("Light", lightButton.value);
+          var redlightButton = document.getElementById("RED Light");
+          sendButtonInput("RED Light", redlightButton.value);
+          var greenlightButton = document.getElementById("GREEN Light");
+          sendButtonInput("GREEN Light", greenlightButton.value);
+          var bluelightButton = document.getElementById("BLUE Light");
+          sendButtonInput("BLUE Light", bluelightButton.value);
         };
         websocketCarInput.onclose   = function(event){setTimeout(initCarInputWebSocket, 2000);};
         websocketCarInput.onmessage = function(event){};        
@@ -214,8 +242,7 @@ void onCarInputWebSocketEvent(AsyncWebSocket *server,
       std::getline(ss, key, ',');
       std::getline(ss, value, ',');
       Serial.printf("Key [%s] Value[%s]\n", key.c_str(), value.c_str());
-      //Serial.printf("encoder counter %l\n", drive.getEncoderCounters());
-      int valueInt = atoi(value.c_str());
+      valueInt = atoi(value.c_str());
       if (key == "MoveCar")
       {
         //moveCar(valueInt);
@@ -224,11 +251,35 @@ void onCarInputWebSocketEvent(AsyncWebSocket *server,
       else if (key == "Speed")
       {
         //ledcWrite(PWMSpeedChannel, valueInt);
+        speed = valueInt;
         drive.setspeed(valueInt);
       }
-      else if (key == "Light")
+      else if (key == "RED Light")
       {
-        //ledcWrite(PWMLightChannel, valueInt);
+        red = valueInt;
+        leds[0] = CRGB(red, green, blue);
+        leds[1] = CRGB(red, green, blue);
+        leds[2] = CRGB(red, green, blue);
+        leds[3] = CRGB(red, green, blue);
+        FastLED.show();
+      }
+      else if (key == "GREEN Light")
+      {
+        green = valueInt;
+        leds[0] = CRGB(red, green, blue);
+        leds[1] = CRGB(red, green, blue);
+        leds[2] = CRGB(red, green, blue);
+        leds[3] = CRGB(red, green, blue);
+        FastLED.show();
+      }
+      else if (key == "BLUE Light")
+      {
+        blue = valueInt;
+        leds[0] = CRGB(red, green, blue);
+        leds[1] = CRGB(red, green, blue);
+        leds[2] = CRGB(red, green, blue);
+        leds[3] = CRGB(red, green, blue);
+        FastLED.show();
       }
     }
     break;
@@ -259,6 +310,7 @@ void setup(){
 
   server.begin();
   Serial.print("HTTP server started\n");
+  FastLED.addLeds<WS2812B, 23, RGB>(leds, NUM_LEDS);
 }
 
 
@@ -270,19 +322,27 @@ void loop(){
   // Serial.printf("SPIRam Total heap %d, SPIRam Free Heap %d\n", ESP.getPsramSize(), ESP.getFreePsram());
 
   //calculate loop time
-   double dT = (millis() - lastMillis) / 1000.0;
-   lastMillis = millis();
-   ganzezeit += (dT*1000);
-   if(ganzezeit >= 50)
-   {
-      //Serial.printf("ganzzeit = %ld \n", ganzezeit);
-      encValueLEFT = drive.getEncoderValueLEFT();
-      encValueRIGHT = drive.getEncoderValueRIGHT();
-      Serial.printf("Encoder Value Left  = %03d \n", encValueLEFT);
-      Serial.printf("Encoder Value Right = %03d \n", encValueRIGHT);
-      //valueInt = Speed from User Interface
-      ganzezeit = 0;
-   }
+  // if (valueInt != speed && valueInt > 4)
+  // {
+  //   speed = valueInt;
+  // }
+  //  double dT = (millis() - lastMillis) / 1000.0;
+  //  lastMillis = millis();
+  //  ganzezeit += (dT*1000);
+  //  if(ganzezeit >= 50)
+  //  {
+
+  ///rpmVorgabe = (speed * RPM_MAX) / 100.0;
+  //Serial.printf("RPM Value vorgabe Haupschleife vor übergabe  = %d \n", (int)rpmVorgabe);
+  //drive.rpmcontrol((unsigned int)rpmVorgabe);
+  //Serial.printf("ganzzeit = %ld \n", ganzezeit);
+  //encValueLEFT = drive.getEncoderValueLEFT();
+  //encValueRIGHT = drive.getEncoderValueRIGHT();
+  //Serial.printf("Encoder Value Left  = %03d \n", encValueLEFT);
+  //Serial.printf("Encoder Value Right = %03d \n", encValueRIGHT);
+  //valueInt = Speed from User Interface
+  //ganzezeit = 0;
+  //  }
 
   // if(rosSocket.client.connected()){
 
