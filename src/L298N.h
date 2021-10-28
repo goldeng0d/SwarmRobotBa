@@ -64,7 +64,7 @@ class L298N{
        * @param[in] motoNum Motor number A = 1 | B = 2
        * @param[in] percent motor speed percentage
       */
-      void changeSpeed(unsigned int motoNum, double percent);
+      int8_t changeSpeed(unsigned int motoNum, double percent);
 
       /**
        * Change rotational direction or disable motor by breaking
@@ -73,6 +73,19 @@ class L298N{
        * @param[in] direction motor rotation direction
       */
       void changeDirection(unsigned int motoNum, motDirection direction);
+
+      unsigned int getResolution();
+
+      /**
+       * map one value in range A one to range B
+       * 
+       * @param[in] x input value which shall be mapped
+       * @param[in] in_min minimum value of input range A
+       * @param[in] in_max maximum value of input range A
+       * @param[in] out_min minimum value of output range B
+       * @param[in] out_max maximum value of output range B
+      */
+      double mapDouble(double x, double in_min, double in_max, double out_min, double out_max);
 
     private:
       
@@ -91,16 +104,7 @@ class L298N{
       // Motor2 rotation direction
       motDirection motor2_direction;
 
-      /**
-       * map one value in range A one to range B
-       * 
-       * @param[in] x input value which shall be mapped
-       * @param[in] in_min minimum value of input range A
-       * @param[in] in_max maximum value of input range A
-       * @param[in] out_min minimum value of output range B
-       * @param[in] out_max maximum value of output range B
-      */
-      double mapDouble(double x, double in_min, double in_max, double out_min, double out_max);
+      
 
 
 

@@ -326,15 +326,15 @@ void loop(){
   // {
   //   speed = valueInt;
   // }
-  //  double dT = (millis() - lastMillis) / 1000.0;
-  //  lastMillis = millis();
+    double dT = (millis() - lastMillis) / 1000.0;
+    lastMillis = millis();
   //  ganzezeit += (dT*1000);
   //  if(ganzezeit >= 50)
   //  {
 
   rpmVorgabe = (speed * RPM_MAX) / 100.0;
-  Serial.printf("RPM Value vorgabe Haupschleife vor übergabe  = %d \n", (int)rpmVorgabe);
-  drive.rpmcontrol((unsigned int)rpmVorgabe);
+  //Serial.printf("RPM Value vorgabe Haupschleife vor übergabe  = %d \n", (int)rpmVorgabe);
+  //drive.rpmcontrol((unsigned int)rpmVorgabe);
   //Serial.printf("ganzzeit = %ld \n", ganzezeit);
   //encValueLEFT = drive.getEncoderValueLEFT();
   //encValueRIGHT = drive.getEncoderValueRIGHT();
@@ -343,12 +343,12 @@ void loop(){
   //valueInt = Speed from User Interface
   //ganzezeit = 0;
   //  }
-
+  v = speed;
   // if(rosSocket.client.connected()){
 
   //   Serial.println("connected...");
   //   rosSocket.update(v, w);
-  //   drive.update(dT, v, w);
+     drive.update(dT, v, w);
 
   // }else{
 

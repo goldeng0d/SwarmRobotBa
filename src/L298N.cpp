@@ -51,7 +51,7 @@ void L298N::changeDuty(unsigned int motoNum, unsigned int duty){
 
 }
 
-void L298N::changeSpeed(unsigned int motoNum, double percent){
+int8_t L298N::changeSpeed(unsigned int motoNum, double percent){
 
     percent =  constrain(percent, 0.0, 100.0);
     unsigned int duty = mapDouble(percent, 0.0, 100.0, 60.0, pow(2,resolution_)-1);
@@ -61,6 +61,7 @@ void L298N::changeSpeed(unsigned int motoNum, double percent){
     changeDuty(motoNum, duty);
     //Uncomment if you want to see the duty cycle in serial Monitor
     Serial.printf("duty: %d\n", duty);
+    return duty;
 }
 
 
@@ -120,4 +121,9 @@ double L298N::mapDouble(double x, double in_min, double in_max, double out_min, 
     double result;
     result = (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
     return result;
+}
+
+unsigned int L298N::getResolution()
+{
+    return resolution_;
 }

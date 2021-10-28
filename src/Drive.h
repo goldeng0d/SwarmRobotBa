@@ -9,6 +9,12 @@
 
 
 #define WHEEL_DISTANCE_L 0.140 // 140mm // our BARobot has ~110mm
+#define ENCODER_COUNTS_PER_REVOLUTION_MOTORSIDE 12
+#define MILLISEC_IN_SEC 1000
+#define SEC_IN_MIN 60
+#define RAMP_FRACTION_SLOW (1/5)
+#define RAMP_FRACTION_FAST (1/15)
+#define RPM_MAX 30000
 #define UP 1
 #define DOWN 2
 #define LEFT 3
@@ -42,13 +48,14 @@ class Drive{
        * @param[in] omega Linear Velocity which should be driven
       */
       void update(double dT, const double vel, const double omega);
+
       void move(const int direction);
       void setspeed(const int velocity);
       void setspeedMotorLEFT(const int velocity);
       void setspeedMotorRIGHT(const int velocity);
       int32_t getEncoderValueLEFT(void);
       int32_t getEncoderValueRIGHT(void);
-      void rpmcontrol(int rpm);
+      void rpmcontrol(int rpmVorgabe);
 
     private:
 
@@ -68,10 +75,7 @@ class Drive{
          * @param[out] iVal global variable which needs to be saved globally
         */
       float PIRegler(float error, float dt, float Kp, float Ki, float high, float low, float &iVal);
-
-
-
-      
+      int mapInteger(int x, int in_min, int in_max, int out_min, int out_max);
 };
 
 #endif
