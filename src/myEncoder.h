@@ -131,8 +131,8 @@ class myEncoder{
       /**
        * update the counter variable and reset the internal interrupt counter
       */
-       int32_t readAndResetRIGHT();
-       int32_t readAndResetLEFT();
+       int32_t IRAM_ATTR readAndResetRIGHT();
+       int32_t IRAM_ATTR readAndResetLEFT();
 
        /**
        * write a certain variable p into the internal interrupt counter

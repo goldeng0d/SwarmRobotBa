@@ -3,7 +3,7 @@
 #define ENCODER_ARGLIST_SIZE 4+1
 
 static Encoder_internal_state_t *interruptArgs[ENCODER_ARGLIST_SIZE];
-void update(Encoder_internal_state_t *arg);
+void IRAM_ATTR update(Encoder_internal_state_t *arg);
 
 myEncoder::myEncoder(double rate, double wheelDiameter, unsigned long countsPerRevolution, myEncoder_pins enc1pin, myEncoder_pins enc2pin)
 {
@@ -296,7 +296,6 @@ inline void myEncoder::writeLEFT(int32_t p)
 //	1	1	1	1	no movement
 void update(Encoder_internal_state_t *arg)
 {
-
   uint8_t p1val = (((*(arg->pin1_register)) & (arg->pin1_bitmask)) ? 1 : 0);
   uint8_t p2val = (((*(arg->pin2_register)) & (arg->pin2_bitmask)) ? 1 : 0);
   uint8_t state = arg->state & 3;
@@ -305,7 +304,21 @@ void update(Encoder_internal_state_t *arg)
   if (p2val)
     state |= 8;
   arg->state = (state >> 2);
-  switch (state)
+  // Do **not** use switch-case statement here 
+  // The compiler emits a jump-table which is somehow (?!) still located
+  // in flash and thus can't be used in an ISR since everything has to be in IRAM or DRAM.
+  // this is actually bug-worthy to report.
+  // the code below does the same and does not crash.
+  if(state == 1 || state == 7 || state == 8 || state == 14) {
+      arg->position++;
+  } else if(state == 2 || state == 4 || state == 11 || state == 13){
+      arg->position--;
+  } else if(state == 3 || state == 12) {
+      arg->position += 2;
+  } else if(state == 6 || state == 9) {
+      arg->position -= 2;
+  }
+  /*switch (state)
   {
     case 1: case 7: case 8: case 14:
       arg->position++;
@@ -323,5 +336,5 @@ void update(Encoder_internal_state_t *arg)
       arg->position -= 2;
       //Serial.printf("position = %d\n", arg->position);
       return;
-  }
+  }*/
 }

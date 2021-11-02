@@ -53,8 +53,8 @@ class Drive{
       void setspeed(const int velocity);
       void setspeed(const unsigned int motoNum, const int velocity);
       void setDutyMotor(const unsigned int motoNum, const int duty);
-      int32_t getEncoderValueLEFT(void);
-      int32_t getEncoderValueRIGHT(void);
+      int32_t IRAM_ATTR getEncoderValueLEFT(void);
+      int32_t IRAM_ATTR getEncoderValueRIGHT(void);
       void rpmcontrol(int rpmVorgabe);
       void updateEncoderAndRPM(unsigned long dT);
 
