@@ -16,7 +16,7 @@ Robot has to be build beforehand.
 7. type in the opened terminal -> git clone <replace-with-link-here>
 8. Go Back to Visual Studio Code -> on the Left side of Visual Studio Code is now a Button PlatfomIO click on it and select from Quick Access Open under PIO Home
 9. Select Open Project and Select the Folder you just Cloned
-10. Download Libraries [lib1](https://github.com/me-no-dev/AsyncTCP/archive/refs/heads/master.zip), [lib2](https://github.com/me-no-dev/ESPAsyncWebServer/archive/refs/heads/master.zip), [lib3](https://github.com/FastLED/FastLED/archive/refs/heads/master.zip) and unzip them
+10. Download Libraries [lib1](https://github.com/me-no-dev/AsyncTCP/archive/refs/heads/master.zip), [lib2](https://github.com/me-no-dev/ESPAsyncWebServer/archive/refs/heads/master.zip), [lib3](https://github.com/adafruit/Adafruit_NeoPixel/archive/refs/heads/master.zip) and unzip them
 11. Create a folder **lib** on the same level as folder src and move the unzipped libraries into **lib** folder
 10. Connect only one ESP32 to your PC
 11. On the Bottom Line of Visual Studio Code is a button -> **Switch PlatformIO Project Enviroment** -> make sure SwarmRobotBa is selected

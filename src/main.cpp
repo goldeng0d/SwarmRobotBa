@@ -4,36 +4,68 @@
 #include <AsyncTCP.h>
 #include <ESPAsyncWebServer.h>
 #include "Drive.h"
-#include "Socket2ROS.h"
 #include <iostream>
 #include <sstream>
-#include "FastLED.h"
+#include <Adafruit_NeoPixel.h>
+
+#define LOCAL_DEBUG 1
+#define TIMER_INTERRUPT_DEBUG 0
+#define TIMER0_INTERVAL_MS 1
+#define TOGGLEPIN1 21
+#define TOGGLEPIN2 22
 
 #define NUM_LEDS 4
-CRGB leds[NUM_LEDS];
+#define LEDPIN 23
+Adafruit_NeoPixel pixels = Adafruit_NeoPixel(NUM_LEDS, LEDPIN, NEO_GRB + NEO_KHZ800);
+uint8_t redvalue = 0, greenvalue = 0, bluevalue = 0;
+void showLEDs(int red, int green, int blue);
 
-const int ledPin = 2; 
-
-unsigned long lastMillis = 0;
+    unsigned long lastMillis = 0;
 volatile unsigned long ganzezeit = 0;
-int32_t encValueLEFT = 0;
-int32_t encValueRIGHT = 0;
+volatile double rpmVorgabe;
+volatile int32_t encValueLEFT = 0;
+volatile int32_t encValueRIGHT = 0;
 volatile int valueInt = 0;
 volatile int speed = 0;
 Drive drive;
 
-uint8_t red = 0, green = 0, blue = 0;
-
 double v;
 double w;
-volatile double rpmVorgabe;
 
+volatile int32_t encoderValueleft;
+volatile int32_t encoderValueright;
+volatile int32_t Stellwert = 0;
+volatile int32_t Sollwert = 0;
+
+// Init ESP32 timer 0
+hw_timer_t * timer0 = NULL;
+portMUX_TYPE timerMux0 = portMUX_INITIALIZER_UNLOCKED;
+
+void IRAM_ATTR TimerHandler0(void)
+{
+  static bool toggle0 = false;
+
+#if (TIMER_INTERRUPT_DEBUG > 0)
+  Serial.print("ITimer0 called, millis() = ");
+  Serial.println(millis());
+#endif
+
+  //timer interrupt toggles pin LED_BUILTIN
+  digitalWrite(TOGGLEPIN1, toggle0);
+  toggle0 = !toggle0;
+
+  // portENTER_CRITICAL_ISR(&timerMux0);
+  encoderValueleft = drive.getEncoderValueLEFT();
+  encoderValueright = drive.getEncoderValueRIGHT();
+  // portEXIT_CRITICAL_ISR(&timerMux0);
+}
+
+//Websocket for Car Control
 const char *ssid = "MyWiFiCar";
 const char *password = "12345678";
 AsyncWebServer server(80);
 AsyncWebSocket wsCarInput("/CarInput");
 volatile double dT = 0;
-//Socket2ROS rosSocket;
 
 const char *htmlHomePage PROGMEM = R"HTMLHOMEPAGE(
 <!DOCTYPE html>
@@ -212,6 +244,8 @@ void handleNotFound(AsyncWebServerRequest *request)
   request->send(404, "text/plain", "File Not Found");
 }
 
+
+
 void onCarInputWebSocketEvent(AsyncWebSocket *server,
                               AsyncWebSocketClient *client,
                               AwsEventType type,
@@ -256,30 +290,18 @@ void onCarInputWebSocketEvent(AsyncWebSocket *server,
       }
       else if (key == "RED Light")
       {
-        red = valueInt;
-        leds[0] = CRGB(red, green, blue);
-        leds[1] = CRGB(red, green, blue);
-        leds[2] = CRGB(red, green, blue);
-        leds[3] = CRGB(red, green, blue);
-        FastLED.show();
+        redvalue = valueInt;
+        showLEDs(redvalue, greenvalue, bluevalue);
       }
       else if (key == "GREEN Light")
       {
-        green = valueInt;
-        leds[0] = CRGB(red, green, blue);
-        leds[1] = CRGB(red, green, blue);
-        leds[2] = CRGB(red, green, blue);
-        leds[3] = CRGB(red, green, blue);
-        FastLED.show();
+        greenvalue = valueInt;
+        showLEDs(redvalue, greenvalue, bluevalue);
       }
       else if (key == "BLUE Light")
       {
-        blue = valueInt;
-        leds[0] = CRGB(red, green, blue);
-        leds[1] = CRGB(red, green, blue);
-        leds[2] = CRGB(red, green, blue);
-        leds[3] = CRGB(red, green, blue);
-        FastLED.show();
+        bluevalue = valueInt;
+        showLEDs(redvalue, greenvalue, bluevalue);
       }
     }
     break;
@@ -291,13 +313,33 @@ void onCarInputWebSocketEvent(AsyncWebSocket *server,
   }
 }
 
+void showLEDs(int red, int green, int blue)
+{
+  for (int i = 0; i < NUM_LEDS; i++)
+  {
+    pixels.setPixelColor(i, pixels.Color(red, green, blue));
+  }
+  pixels.show();
+}
+
 void setup(){
   Serial.begin(9600);
+  Serial.println("CPU Frequency in MHZ:");
+  Serial.println(getCpuFrequencyMhz());
 
-  //rosSocket.setup();
+  //Timer setup
+  pinMode(TOGGLEPIN1, OUTPUT);
+  pinMode(TOGGLEPIN2, OUTPUT);
+  timer0 = timerBegin(0, 80, true); // 12,5 ns * 80 = 1000ns = 1us
+  timerAttachInterrupt(timer0, &TimerHandler0, true);
+  timerAlarmWrite(timer0, 1000, true);
+  timerAlarmEnable(timer0);
+
+  //Drive setup
   drive.setup();
   drive.move(0);
 
+  //WIFI/TCP Websocket setup
   WiFi.softAP(ssid, password);
   IPAddress IP = WiFi.softAPIP();
   Serial.print("\nAP IP address: ");
@@ -310,53 +352,78 @@ void setup(){
 
   server.begin();
   Serial.print("HTTP server started\n");
-  FastLED.addLeds<WS2812B, 23, RGB>(leds, NUM_LEDS);
+
+  //LED setup
+  
+  pixels.begin();
 }
 
-
-void loop(){
-
+void loop()
+{
+  // drive.move(1);
   wsCarInput.cleanupClients();
-  
+
   // Serial.printf("main loop encvalue = %l\n", enccounter);
   // Serial.printf("SPIRam Total heap %d, SPIRam Free Heap %d\n", ESP.getPsramSize(), ESP.getFreePsram());
-
-  //calculate loop time
-  // if (valueInt != speed && valueInt > 4)
-  // {
-  //   speed = valueInt;
-  // }
-    double dT = (millis() - lastMillis) / 1000.0;
-    lastMillis = millis();
-  //  ganzezeit += (dT*1000);
-  //  if(ganzezeit >= 50)
-  //  {
-
-  rpmVorgabe = (speed * RPM_MAX) / 100.0;
-  //Serial.printf("RPM Value vorgabe Haupschleife vor übergabe  = %d \n", (int)rpmVorgabe);
-  //drive.rpmcontrol((unsigned int)rpmVorgabe);
+   rpmVorgabe = (speed * RPM_MAX) / 100.0;
+  // Serial.printf("RPM Value vorgabe Haupschleife vor Ã¼bergabe  = %d \n", (int)rpmVorgabe);
+  // drive.rpmcontrol((unsigned int)rpmVorgabe);
   //Serial.printf("ganzzeit = %ld \n", ganzezeit);
-  //encValueLEFT = drive.getEncoderValueLEFT();
-  //encValueRIGHT = drive.getEncoderValueRIGHT();
-  //Serial.printf("Encoder Value Left  = %03d \n", encValueLEFT);
-  //Serial.printf("Encoder Value Right = %03d \n", encValueRIGHT);
-  //valueInt = Speed from User Interface
-  //ganzezeit = 0;
-  //  }
-  v = speed;
-  // if(rosSocket.client.connected()){
 
-  //   Serial.println("connected...");
-  //   rosSocket.update(v, w);
-     drive.update(dT, v, w);
+  double dT = (millis() - lastMillis) / 1000.0;
+  lastMillis = millis();
+  ganzezeit += (dT * 1000);
+  if (ganzezeit >= 200)
+  {
+    //timer interrupt toggles pin LED_BUILTIN
+    // digitalWrite(TOGGLEPIN2, toggle1);
+    // toggle1 = !toggle1;
 
-  // }else{
+    // encValueLEFT = drive.getEncoderValueLEFT();
+    // encValueRIGHT = drive.getEncoderValueRIGHT();
 
-  //   Serial.println("not connected...");
-  //   drive.update(dT, 0, 0);
-  //   rosSocket.connectSocket();
+    // double leftrpmValue = (((double)encValueLEFT / ENCODER_COUNTS_PER_REVOLUTION_MOTORSIDE) / (double)ganzezeit / 1000) * SEC_IN_MIN;
+    // double rightrpmValue = (((double)encValueRIGHT / ENCODER_COUNTS_PER_REVOLUTION_MOTORSIDE) / (double)ganzezeit / 1000) * SEC_IN_MIN;
 
-  // }
+    // Serial.printf("Encoder Value Left  = %d \n", encValueLEFT);
+    // Serial.printf("Encoder Value Right = %d \n", encValueRIGHT);
 
+    // Serial.printf("MotorDrehzahl Value Left  = %f \n", leftrpmValue);
+    // Serial.printf("MotorDrehzahl Value Right = %f \n", rightrpmValue);
+    // Serial.println("dT = ");
+    // Serial.println(ganzezeit);
+    // digitalWrite(TOGGLEPIN2, toggle1);
+    // toggle1 = !toggle1;
+    //valueInt = Speed from User Interface
+    //   ganzezeit = 0;
+    // }
+
+    // if(rosSocket.client.connected()){
+    v = valueInt;
+
+    if (Sollwert > encValueRIGHT && Stellwert < 255)
+    {
+      Stellwert += 2;
+    }
+    else if (Sollwert < encValueRIGHT && Stellwert > 0){
+      Stellwert -= 2;
+    }
+    drive.setDutyMotor(MOTORRIGHT, Stellwert);
+    
+    // Serial.println("Stellwert:");
+    // Serial.println(Stellwert);
+    // Serial.println("encValeRight");
+    // Serial.println(encValueRIGHT);
+
+    //   Serial.println("connected...");
+    //   rosSocket.update(v, w);
+    //drive.update(dT, v, w);
+
+    // }else{
+
+    //   Serial.println("not connected...");
+    //   drive.update(dT, 0, 0);
+    //   rosSocket.connectSocket();
+
+   }
 }
-

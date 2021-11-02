@@ -83,17 +83,17 @@ class myEncoder{
       // void IRAM_ATTR ISR_enc3();
       // void IRAM_ATTR ISR_enc4();
 
-      // struct to store date of encoder 1
-      myEncoder_struct encoder1;
+      // struct to store date of encoderLeft
+      myEncoder_struct encoderLeft;
 
-      // struct to store internal encoder values
-      Encoder_internal_state_t libencoder1;
+      // struct to store internal libencoderLeft values
+      Encoder_internal_state_t libencoderLeft;
 
-      // struct to store date of encoder 2
-      myEncoder_struct encoder2;
+      // struct to store date of encoderRight
+      myEncoder_struct encoderRight;
 
-      // struct to store internal encoder values
-      Encoder_internal_state_t libencoder2;
+      // struct to store internal libencoderRight values
+      Encoder_internal_state_t libencoderRight;
 
       /**
        * attatch rising and falling edge interrupts to pins
@@ -104,6 +104,11 @@ class myEncoder{
        * update counter, omega, velocity and distance of both encoder structs
       */
       void myupdate();
+
+      /**
+       * update counter, omega, velocity and distance of both encoder structs
+      */
+      void myupdates();
 
       /**
        * This encoder cant detect rotation direction by itself -> needs to be supplied

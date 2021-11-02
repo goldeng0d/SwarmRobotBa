@@ -51,31 +51,36 @@ class Drive{
 
       void move(const int direction);
       void setspeed(const int velocity);
-      void setspeedMotorLEFT(const int velocity);
-      void setspeedMotorRIGHT(const int velocity);
+      void setspeed(const unsigned int motoNum, const int velocity);
+      void setDutyMotor(const unsigned int motoNum, const int duty);
       int32_t getEncoderValueLEFT(void);
       int32_t getEncoderValueRIGHT(void);
       void rpmcontrol(int rpmVorgabe);
+      void updateEncoderAndRPM(unsigned long dT);
 
     private:
 
       // global variables which needs to be saved globally
       float iVal_rightWheel;
       float iVal_leftWheel;
+      int32_t leftrpmValue ;
+      int32_t rightrpmValue;
 
       /**
-         * PI-Controller with mit control signal limitation and anti-windup
-         * 
-         * @param[in] error Error which should become 0
-         * @param[in] dt time elapsed since controller was called the last time
-         * @param[in] Kp Proportional factor
-         * @param[in] Ki Integral Factor
-         * @param[in] high maximum output limit
-         * @param[in] low minimum input limit
-         * @param[out] iVal global variable which needs to be saved globally
-        */
-      float PIRegler(float error, float dt, float Kp, float Ki, float high, float low, float &iVal);
+      * PI-Controller with mit control signal limitation and anti-windup
+      * 
+      * @param[in] error Error which should become 0
+      * @param[in] dt time elapsed since controller was called the last time
+      * @param[in] Kp Proportional factor
+      * @param[in] Ki Integral Factor
+      * @param[in] high maximum output limit
+      * @param[in] low minimum input limit
+      * @param[out] iVal global variable which needs to be saved globally
+      */
+      float
+      PIRegler(float error, float dt, float Kp, float Ki, float high, float low, float &iVal);
       int mapInteger(int x, int in_min, int in_max, int out_min, int out_max);
+      int32_t CalculateRPMfromEncoderValue(int32_t encValue, unsigned long dT);
 };
 
 #endif

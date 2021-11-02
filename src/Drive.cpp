@@ -47,16 +47,18 @@ void Drive::setspeed(const int velocity){
   roboMotors.changeSpeed(MOTORRIGHT, velocity);
 }
 
-void Drive::setspeedMotorLEFT(const int velocity)
+void Drive::setspeed(const unsigned int motoNum, const int velocity)
 {
-  // output motor speed
+
+  // output motor speeds
   roboMotors.changeSpeed(MOTORLEFT, velocity);
+  roboMotors.changeSpeed(MOTORRIGHT, velocity);
 }
 
-void Drive::setspeedMotorRIGHT(const int velocity)
+void Drive::setDutyMotor(const unsigned int motoNum, const int duty)
 {
   // output motor speed
-  roboMotors.changeSpeed(MOTORRIGHT, velocity);
+  roboMotors.changeDuty(motoNum, duty);
 }
 
 void Drive::move(const int direction){
@@ -115,12 +117,12 @@ void Drive::update(double dT, const double vel, const double omega){
   if(v_l > 0){
     //roboEncoder.setCntDir(1);
     roboMotors.changeDirection(MOTORLEFT, motDirection::FORWARD);
-    vl_error = v_l - roboEncoder.encoder1.vel;
+    vl_error = v_l - roboEncoder.encoderLeft.vel;
 
   } else if(v_l < 0){
     //roboEncoder.setCntDir(1);
     roboMotors.changeDirection(MOTORLEFT, motDirection::BACKWARD);
-    vl_error = roboEncoder.encoder1.vel - v_l;
+    vl_error = roboEncoder.encoderLeft.vel - v_l;
 
   } else {
     roboMotors.changeDirection(MOTORLEFT, motDirection::BREAKING);
@@ -131,12 +133,12 @@ void Drive::update(double dT, const double vel, const double omega){
   if(v_r > 0){
     //roboEncoder.setCntDir(2);
     roboMotors.changeDirection(MOTORRIGHT, motDirection::FORWARD);
-    vr_error = v_r - roboEncoder.encoder1.vel;
+    vr_error = v_r - roboEncoder.encoderLeft.vel;
 
   } else if(v_r < 0){
     //roboEncoder.setCntDir(2);
     roboMotors.changeDirection(MOTORRIGHT, motDirection::BACKWARD);
-    vr_error = roboEncoder.encoder1.vel - v_r;
+    vr_error = roboEncoder.encoderLeft.vel - v_r;
     
   } else {
     roboMotors.changeDirection(MOTORRIGHT, motDirection::BREAKING);
@@ -168,16 +170,12 @@ void Drive::update(double dT, const double vel, const double omega){
 
 int32_t Drive::getEncoderValueLEFT(void)
 {
-  int32_t value = roboEncoder.readAndResetLEFT();
-  //Serial.printf("readdriveleft = %d\n", value);
-  return (value);
+  return (roboEncoder.readAndResetLEFT());
 }
 
 int32_t Drive::getEncoderValueRIGHT(void)
 {
-  int32_t value = roboEncoder.readAndResetRIGHT();
-  //Serial.printf("readdriveright = %d\n", value);
-  return (value);
+  return (roboEncoder.readAndResetRIGHT());
 }
 
 void Drive::rpmcontrol(int rpmVorgabe){
@@ -422,3 +420,21 @@ int Drive::mapInteger(int x, int in_min, int in_max, int out_min, int out_max)
    result = (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
    return (int)result;
 }
+
+void Drive::updateEncoderAndRPM(unsigned long dT){
+  roboEncoder.myupdates();
+  leftrpmValue = CalculateRPMfromEncoderValue(roboEncoder.encoderLeft.counter, dT);
+  rightrpmValue = CalculateRPMfromEncoderValue(roboEncoder.encoderRight.counter, dT);
+  return;
+}
+
+int32_t Drive::CalculateRPMfromEncoderValue(int32_t encValue, unsigned long dT)
+{
+  return (((encValue / ENCODER_COUNTS_PER_REVOLUTION_MOTORSIDE) / (dT / MILLISEC_IN_SEC)) * SEC_IN_MIN);
+}
+
+// int8_t Drive::Zweipunktregler(int8_t Sollwert){
+//   int8_t Stellwert;
+//   if (Sollwert)
+//   return Stellwert;
+// }
