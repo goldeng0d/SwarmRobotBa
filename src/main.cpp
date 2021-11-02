@@ -323,7 +323,8 @@ void showLEDs(int red, int green, int blue)
 }
 
 void setup(){
-  Serial.begin(9600);
+  Serial.begin(115200);
+  delay(500);
   Serial.println("CPU Frequency in MHZ:");
   Serial.println(getCpuFrequencyMhz());
 
@@ -331,7 +332,7 @@ void setup(){
   pinMode(TOGGLEPIN1, OUTPUT);
   pinMode(TOGGLEPIN2, OUTPUT);
   timer0 = timerBegin(0, 80, true); // 12,5 ns * 80 = 1000ns = 1us
-  timerAttachInterrupt(timer0, &TimerHandler0, true);
+  timerAttachInterrupt(timer0, &TimerHandler0, /*true*/ false); //edge interrupts do not work, use false
   timerAlarmWrite(timer0, 1000, true);
   timerAlarmEnable(timer0);
 
