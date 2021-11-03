@@ -4,7 +4,7 @@
 // settings made here -> later create a configuration header with defines
 myEncoder roboEncoder(50.0, 66.5, 12, {4, 5}, {35, 34});
 //myEncoder roboEncoder(50.0, 66.5, 1200, {4, 5}, {34, 35});
-L298N roboMotors(4000, 8, {17, 18, 16, 2} , {33, 32, 19, 1});
+L298N roboMotors(PWM_FREQUENCY, PWM_RESOLUTION, {17, 18, 16, 2}, {33, 32, 19, 1});
 //L298N roboMotors(4000, 8, {17, 18, 16, 2}, {32, 33, 19, 1});
 
 unsigned long lastMillisecafterBoot = 0;
@@ -178,240 +178,96 @@ int32_t Drive::getEncoderValueRIGHT(void)
   return (roboEncoder.readAndResetRIGHT());
 }
 
-void Drive::rpmcontrol(int rpmVorgabe){
-   int differenzleft = 0;
-   int differenzright = 0;
-   int absolutdifferenzleft = 0;
-   int absolutdifferenzright = 0;
-   volatile uint32_t rpmvorgaberightold = rpmVorgabe;
-   volatile uint32_t rpmvorgabeleftold = rpmVorgabe;
-   double dT = 0;
-   double percent = 0;
-   int32_t leftEncoderValue = 0;
-   int32_t rightEncoderValue = 0;
-   int32_t leftrpmValue = 0;
-   int32_t rightrpmValue = 0;
-   int32_t differenzSchrittlinks = 0;
-   int32_t differenzSchrittrechts = 0;
-   uint8_t newDutycycle = 0;
-   while (1)
+// void IRAM_ATTR Drive::rpmcontrol(int rpmVorgabe, int32_t &encoderValueleft, int32_t &encoderValueright)
+// {
+
+//    return;
+// }
+
+int32_t IRAM_ATTR Drive::IRegler(const int32_t Sollwertdrehzahl, const float dT, int32_t Stellwert, const int32_t Drehzahlvalue, const int32_t resolution, const float lowfraction)
+{
+   // roboEncoder.myupdates();
+   int32_t high = 0;
+   // Although more comfortable DO NOT USE SWITCH CASE HERE OR THE PROGRAM CRASHES
+   // This Look-up Table is a Lot faster than the power function.
+   if (resolution == 8)
    {
-      leftEncoderValue = roboEncoder.readAndResetLEFT();
-      rightEncoderValue = roboEncoder.readAndResetRIGHT();
-      dT = (millis() - lastMillisecafterBoot) / 1000.0;
-      lastMillisecafterBoot = millis();
-      //volatile unsigned long ganzezeit = (dT * 1000);
-      leftrpmValue = ((leftEncoderValue / ENCODER_COUNTS_PER_REVOLUTION_MOTORSIDE) / dT) * SEC_IN_MIN;
-      if (leftrpmValue < 0){
-         leftrpmValue = -leftrpmValue;
-      }
-      rightrpmValue = ((rightEncoderValue / ENCODER_COUNTS_PER_REVOLUTION_MOTORSIDE) / dT ) * SEC_IN_MIN;
-      if (rightrpmValue < 0)
-      {
-         rightrpmValue = -rightrpmValue;
-      }
-      differenzleft = rpmVorgabe - leftrpmValue;
-      differenzright = rpmVorgabe - rightrpmValue;
-
-      differenzSchrittlinks = 100;
-      differenzSchrittrechts = 100;
-
-      // set Stepsize towards goal for left Motor
-      // if (differenzleft < 0)
-      // {
-      //    absolutdifferenzleft = -differenzleft;
-      // }
-      // if (absolutdifferenzleft > 8000)
-      // {
-      //    differenzSchrittlinks = 4000;
-      // }
-      // else if (absolutdifferenzleft <= 8000 && absolutdifferenzleft > 2000)
-      // {
-      //    differenzSchrittlinks = 2000;
-      // }
-      // else if (absolutdifferenzleft <= 2000 && absolutdifferenzleft > 500)
-      // {
-      //    differenzSchrittlinks = 500;
-      // }
-      // else if (absolutdifferenzleft <= 500)
-      // {
-      //    differenzSchrittlinks = 100;
-      // }
-      // // set Stepsize towards goal for right Motor
-      // if(differenzright < 0)
-      // {
-      //    absolutdifferenzright = -differenzright;
-      // }
-      // if (absolutdifferenzright > 8000)
-      // {
-      //    differenzSchrittrechts = 4000;
-      // }
-      // else if (absolutdifferenzright <= 8000 && absolutdifferenzright > 2000)
-      // {
-      //    differenzSchrittrechts = 2000;
-      // }
-      // else if (absolutdifferenzright <= 2000 && absolutdifferenzright > 500)
-      // {
-      //    differenzSchrittrechts = 500;
-      // }
-      // else if (absolutdifferenzright <= 500)
-      // {
-      //    differenzSchrittrechts = 100;
-      // }
-
-      // Serial.printf("Zeit in ms = %f \n", dT * 1000);
-      // Serial.printf("Differenz left  = %d \n", differenzleft);
-      // Serial.printf("Differenz Right = %d \n", differenzright);
-      // Serial.printf("RPM Value vorgabe  = %d \n", rpmVorgabe);
-      // Serial.printf("RPM Value Calc Left  = %d \n", leftrpmValue);
-      // Serial.printf("RPM Value Calc Right = %d \n", rightrpmValue);
-      //int32_t encoderValueDifference = leftEncoderValue - rightEncoderValue;
-      newDutycycle = 0;
-      if(rightrpmValue == 0)
-      {
-         rightrpmValue++;
-      }
-      percent = (leftrpmValue / rightrpmValue) * 100;
-
-      roboMotors.changeSpeed(MOTORRIGHT, percent);
-
-      if (percent < 5)
-      {
-         break;
-      }
-
-      //double newrpmTarget;
-      // if (leftrpmValue < rpmVorgabe || rightrpmValue < rpmVorgabe)
-      // {
-      //    if (differenzleft > 0)
-      //    {
-      //       newDutycycle = mapInteger(rpmvorgabeleftold, 0, RPM_MAX, 80, pow(2, roboMotors.getResolution()) - 1);
-      //       // Serial.printf("rpmvorgaberightold more Left  = %d \n", rpmvorgabeleftold);
-      //       // Serial.printf("newDutycycle vor more Left  = %d \n", newDutycycle);
-      //       roboMotors.changeDuty(MOTORLEFT,newDutycycle);
-      //       rpmvorgabeleftold += differenzSchrittlinks;
-      //       // Serial.printf("rpmvorgaberightold nach more Left  = %d \n", rpmvorgaberightold);
-      //    }
-
-      //    if (differenzright > 0)
-      //    {
-      //       newDutycycle = mapInteger(rpmvorgaberightold, 0, RPM_MAX, 80, pow(2, roboMotors.getResolution()) - 1);
-      //       // Serial.printf("rpmvorgaberightold more Right  = %d \n", rpmvorgaberightold);
-      //       Serial.printf("newDutycycle vor more Right  = %d \n", newDutycycle);
-      //       roboMotors.changeDuty(MOTORRIGHT, newDutycycle);
-      //       rpmvorgaberightold += differenzSchrittrechts;
-      //       // Serial.printf("rpmvorgaberightold nach more Right  = %d \n", rpmvorgaberightold);
-      //    }
-      // }
-      // if (leftrpmValue > rpmVorgabe || rightrpmValue > rpmVorgabe)
-      // {
-      //    if (differenzleft < 0)
-      //    {
-      //       newDutycycle = mapInteger(rpmvorgabeleftold, 0, RPM_MAX, 80, pow(2, roboMotors.getResolution()) - 1);
-      //       // Serial.printf("rpmvorgaberightold less Left  = %d \n", rpmvorgabeleftold);
-      //       // Serial.printf("newDutycycle less Left  = %d \n", newDutycycle);
-      //       //roboMotors.changeDuty(MOTORLEFT, newDutycycle);
-      //       rpmvorgabeleftold -= differenzSchrittlinks;
-      //       // Serial.printf("rpmvorgaberightold nach less Left  = %d \n", rpmvorgaberightold);
-      //    }
-
-      //    if (differenzright < 0)
-      //    {
-      //       newDutycycle = mapInteger(rpmvorgaberightold, 0, RPM_MAX, 80, pow(2, roboMotors.getResolution()) - 1);
-      //       // Serial.printf("rpmvorgaberightold vor less Right  = %d \n", rpmvorgaberightold);
-      //        Serial.printf("newDutycycle less Right  = %d \n", newDutycycle);
-      //       //roboMotors.changeDuty(MOTORRIGHT, newDutycycle);
-      //       rpmvorgaberightold -= differenzSchrittrechts;
-      //       // Serial.printf("rpmvorgaberightold nach less Right  = %d \n", rpmvorgaberightold);
-      //    }
-      // }
-
-      // if ((differenzleft <= 1000 && differenzleft >= -1000) && (differenzright <= 1000 && differenzright >= -1000))
-      // {
-      //    break;
-      // }
-
-      // if (leftrpmValue || rightrpmValue < rpmVorgabe)
-      // {
-      //    if (rpmVorgabe - leftrpmValue > RPM_MAX * RAMP_FRACTION_SLOW)
-      //    {
-      //       newrpmTarget = leftrpmValue + schleifendurchlaeufe * (RPM_MAX * RAMP_FRACTION_SLOW);
-      //       Serial.printf("newrpmTarget more MOTORLEFT  = %f \n", newrpmTarget);
-
-      //       newDutycycle = mapInteger(newrpmTarget, 0, RPM_MAX, 80, pow(2, roboMotors.getResolution()) - 1);
-      //       roboMotors.changeDuty(MOTORLEFT,newDutycycle);
-      //    }
-      //    else{
-      //       newrpmTarget = rpmVorgabe;
-      //       Serial.printf("newrpmTarget more MOTORLEFT  = %f \n", newrpmTarget);
-
-      //       newDutycycle = mapInteger(newrpmTarget, 0, RPM_MAX, 80, pow(2, roboMotors.getResolution()) - 1);
-      //       roboMotors.changeDuty(MOTORLEFT, newDutycycle);
-      //    }
-
-      //    if (rpmVorgabe - rightrpmValue > RPM_MAX * RAMP_FRACTION_SLOW)
-      //    {
-      //       newrpmTarget = rightrpmValue + schleifendurchlaeufe * (RPM_MAX * RAMP_FRACTION_SLOW);
-      //       Serial.printf("newrpmTarget more MOTORRIGHT  = %f \n", newrpmTarget);
-      //       newDutycycle = mapInteger(newrpmTarget, 0, RPM_MAX, 80, pow(2, roboMotors.getResolution()) - 1);
-      //       roboMotors.changeDuty(MOTORRIGHT, newDutycycle);
-      //    }
-      //    else
-      //    {
-      //       newrpmTarget = rpmVorgabe;
-      //       Serial.printf("newrpmTarget more MOTORRIGHT  = %f \n", newrpmTarget);
-
-      //       newDutycycle = mapInteger(newrpmTarget, 0, RPM_MAX, 80, pow(2, roboMotors.getResolution()) - 1);
-      //       roboMotors.changeDuty(MOTORLEFT, newDutycycle);
-      //    }
-
-      //    if (rpmVorgabe - leftrpmValue < RPM_MAX * RAMP_FRACTION_FAST)
-      //    {
-      //       newrpmTarget = leftrpmValue + (schleifendurchlaeufe - 3) * (RPM_MAX * RAMP_FRACTION_SLOW);
-      //       Serial.printf("newrpmTarget more MOTORLEFT  = %f \n", newrpmTarget);
-      //       newDutycycle = mapInteger(newrpmTarget, 0, RPM_MAX, 80, pow(2, roboMotors.getResolution()) - 1);
-      //       roboMotors.changeDuty(MOTORLEFT, newDutycycle);
-      //    }
-      //    else
-      //    {
-      //       newrpmTarget = rpmVorgabe;
-      //       Serial.printf("newrpmTarget more MOTORLEFT  = %f \n", newrpmTarget);
-
-      //       newDutycycle = mapInteger(newrpmTarget, 0, RPM_MAX, 80, pow(2, roboMotors.getResolution()) - 1);
-      //       roboMotors.changeDuty(MOTORLEFT, newDutycycle);
-      //    }
-
-      //    if (rpmVorgabe - rightrpmValue < RPM_MAX * RAMP_FRACTION_FAST)
-      //    {
-      //       newrpmTarget = rightrpmValue + (schleifendurchlaeufe - 3) * (RPM_MAX * RAMP_FRACTION_SLOW);
-      //       Serial.printf("newrpmTarget more MOTORRIGHT  = %f \n", newrpmTarget);
-      //       newDutycycle = mapInteger(newrpmTarget, 0, RPM_MAX, 80, pow(2, roboMotors.getResolution()) - 1);
-      //       roboMotors.changeDuty(MOTORRIGHT, newDutycycle);
-      //    }
-      //    else
-      //    {
-      //       newrpmTarget = rpmVorgabe;
-      //       Serial.printf("newrpmTarget more MOTORRIGHT  = %f \n", newrpmTarget);
-
-      //       newDutycycle = mapInteger(newrpmTarget, 0, RPM_MAX, 80, pow(2, roboMotors.getResolution()) - 1);
-      //       roboMotors.changeDuty(MOTORLEFT, newDutycycle);
-      //    }
-      // }
-      //schleifendurchlaeufe++;
-      // loop until same speed
-   
-      // leftEncoderValue = roboEncoder.readAndResetLEFT();
-      // rightEncoderValue = roboEncoder.readAndResetRIGHT();
-      // encoderValueDifference = leftEncoderValue - rightEncoderValue;
-
-      // if(encoderValueDifference <= 3)
-      // {
-      //    break;
-      // }
+      high = 255;
+   }
+   else if (resolution == 10)
+   {
+      high = 1023;
+   }
+   else if (resolution == 12)
+   {
+      high = 4095;
+   }
+   else if (resolution == 14)
+   {
+      high = 16383;
+   }
+   else if (resolution == 16)
+   {
+      high = 65535;
+   }
+   else if (resolution == 1) //very uncommon to use uneven resolutions but possible
+   {
+      high = 1;
+   }
+   else if (resolution == 2)
+   {
+      high = 3;
+   }
+   else if (resolution == 3)
+   {
+      high = 7;
+   }
+   else if (resolution == 4)
+   {
+      high = 15;
+   }
+   else if (resolution == 5)
+   {
+      high = 31;
+   }
+   else if (resolution == 6)
+   {
+      high = 63;
+   }
+   else if (resolution == 7)
+   {
+      high = 127;
+   }
+   else if (resolution == 9)
+   {
+      high = 511;
+   }
+   else if (resolution == 11)
+   {
+      high = 2047;
+   }
+   else if (resolution == 13)
+   {
+      high = 8191;
+   }
+   else if (resolution == 15)
+   {
+      high = 32767;
+   }
+   else{
+      Serial.println("Error resolution not supported.");
    }
 
-   return;
-
+   if (Sollwertdrehzahl > Drehzahlvalue && Stellwert < high)
+   {
+      Stellwert += 2;
+   }
+   // high * lowfraction to cap minimum Voltage, because if volatage to low on motor won't turn but 
+   else if (Sollwertdrehzahl < Drehzahlvalue && Stellwert > high * lowfraction) 
+   {
+      Stellwert -= 2;
+   }
+   return Stellwert;
 }
 
 int Drive::mapInteger(int x, int in_min, int in_max, int out_min, int out_max)
@@ -428,7 +284,7 @@ void Drive::updateEncoderAndRPM(unsigned long dT){
   return;
 }
 
-int32_t Drive::CalculateRPMfromEncoderValue(int32_t encValue, unsigned long dT)
+int32_t IRAM_ATTR Drive::CalculateRPMfromEncoderValue(int32_t encValue, unsigned long dT)
 {
   return (((encValue / ENCODER_COUNTS_PER_REVOLUTION_MOTORSIDE) / (dT / MILLISEC_IN_SEC)) * SEC_IN_MIN);
 }

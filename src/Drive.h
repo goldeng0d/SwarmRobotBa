@@ -10,6 +10,9 @@
 
 #define WHEEL_DISTANCE_L 0.140 // 140mm // our BARobot has ~110mm
 #define ENCODER_COUNTS_PER_REVOLUTION_MOTORSIDE 12
+#define PWM_RESOLUTION 8
+#define PWM_FREQUENCY 4000
+#define MOTOR_LOWFRACTION 0.25
 #define MILLISEC_IN_SEC 1000
 #define SEC_IN_MIN 60
 #define RAMP_FRACTION_SLOW (1/5)
@@ -57,14 +60,29 @@ class Drive{
       int32_t IRAM_ATTR getEncoderValueRIGHT(void);
       void rpmcontrol(int rpmVorgabe);
       void updateEncoderAndRPM(unsigned long dT);
+      int32_t CalculateRPMfromEncoderValue(int32_t encValue, unsigned long dT);
 
-    private:
+      /**
+      * PI-Controller with mit control signal limitation and anti-windup
+      * 
+      * @param[in] Sollwertdrehzahl Error which should become 0
+      * @param[in] dt time elapsed since controller was called the last time
+      * @param[in] Stellwert Proportional factor
+      * @param[in] Drehzahlvalue Integral Factor
+      * @param[in] high maximum output limit
+      * @param[in] low minimum input limit
+      */
+      int32_t IRAM_ATTR IRegler(const int32_t Sollwertdrehzahl, const float dT, int32_t Stellwert, const int32_t Drehzahlvalue, const int32_t resolution, const float lowfraction);
+
+   private:
 
       // global variables which needs to be saved globally
       float iVal_rightWheel;
       float iVal_leftWheel;
-      int32_t leftrpmValue ;
-      int32_t rightrpmValue;
+      volatile int32_t Stellwertrechts;
+      volatile int32_t Stellwertlinks;
+      volatile int32_t rightrpmValue;
+      volatile int32_t leftrpmValue;
 
       /**
       * PI-Controller with mit control signal limitation and anti-windup
@@ -77,10 +95,9 @@ class Drive{
       * @param[in] low minimum input limit
       * @param[out] iVal global variable which needs to be saved globally
       */
-      float
-      PIRegler(float error, float dt, float Kp, float Ki, float high, float low, float &iVal);
+      float PIRegler(float error, float dt, float Kp, float Ki, float high, float low, float &iVal);
+
       int mapInteger(int x, int in_min, int in_max, int out_min, int out_max);
-      int32_t CalculateRPMfromEncoderValue(int32_t encValue, unsigned long dT);
 };
 
 #endif

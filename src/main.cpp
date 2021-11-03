@@ -20,11 +20,11 @@ Adafruit_NeoPixel pixels = Adafruit_NeoPixel(NUM_LEDS, LEDPIN, NEO_GRB + NEO_KHZ
 uint8_t redvalue = 0, greenvalue = 0, bluevalue = 0;
 void showLEDs(int red, int green, int blue);
 
-    unsigned long lastMillis = 0;
-volatile unsigned long ganzezeit = 0;
-volatile double rpmVorgabe;
-volatile int32_t encValueLEFT = 0;
-volatile int32_t encValueRIGHT = 0;
+// unsigned long lastMillis = 0;
+// volatile unsigned long ganzezeit = 0;
+// volatile double rpmVorgabe;
+// volatile int32_t encValueLEFT = 0;
+// volatile int32_t encValueRIGHT = 0;
 volatile int valueInt = 0;
 volatile int speed = 0;
 Drive drive;
@@ -34,7 +34,11 @@ double w;
 
 volatile int32_t encoderValueleft;
 volatile int32_t encoderValueright;
-volatile int32_t Stellwert = 0;
+volatile float leftrpmValue;
+volatile float rightrpmValue;
+float dT = TIMER0_INTERVAL_MS;
+volatile int32_t Stellwertlinks = 0;
+volatile int32_t Stellwertrechts = 0;
 volatile int32_t Sollwert = 0;
 
 // Init ESP32 timer 0
@@ -43,21 +47,28 @@ portMUX_TYPE timerMux0 = portMUX_INITIALIZER_UNLOCKED;
 
 void IRAM_ATTR TimerHandler0(void)
 {
-  static bool toggle0 = false;
+   static bool toggle0 = false;
 
 #if (TIMER_INTERRUPT_DEBUG > 0)
-  Serial.print("ITimer0 called, millis() = ");
-  Serial.println(millis());
+   Serial.print("ITimer0 called, millis() = ");
+   Serial.println(millis());
 #endif
 
-  //timer interrupt toggles pin LED_BUILTIN
-  digitalWrite(TOGGLEPIN1, toggle0);
-  toggle0 = !toggle0;
+   //timer interrupt toggles pin LED_BUILTIN
+   digitalWrite(TOGGLEPIN1, toggle0);
+   toggle0 = !toggle0;
 
-  // portENTER_CRITICAL_ISR(&timerMux0);
-  encoderValueleft = drive.getEncoderValueLEFT();
-  encoderValueright = drive.getEncoderValueRIGHT();
-  // portEXIT_CRITICAL_ISR(&timerMux0);
+   encoderValueleft = drive.getEncoderValueLEFT();
+   encoderValueright = drive.getEncoderValueRIGHT();
+
+   leftrpmValue = drive.CalculateRPMfromEncoderValue(encoderValueleft, dT);
+   rightrpmValue = drive.CalculateRPMfromEncoderValue(encoderValueright, dT);
+
+   Stellwertlinks = drive.IRegler(Sollwert, dT, Stellwertlinks, leftrpmValue, PWM_RESOLUTION, MOTOR_LOWFRACTION);
+   Stellwertlinks = drive.IRegler(Sollwert, dT, Stellwertlinks, leftrpmValue, PWM_RESOLUTION, MOTOR_LOWFRACTION);
+
+   drive.setDutyMotor(MOTORLEFT, Stellwertlinks);
+   drive.setDutyMotor(MOTORRIGHT, Stellwertrechts);
 }
 
 //Websocket for Car Control
@@ -65,7 +76,6 @@ const char *ssid = "MyWiFiCar";
 const char *password = "12345678";
 AsyncWebServer server(80);
 AsyncWebSocket wsCarInput("/CarInput");
-volatile double dT = 0;
 
 const char *htmlHomePage PROGMEM = R"HTMLHOMEPAGE(
 <!DOCTYPE html>
@@ -366,16 +376,16 @@ void loop()
 
   // Serial.printf("main loop encvalue = %l\n", enccounter);
   // Serial.printf("SPIRam Total heap %d, SPIRam Free Heap %d\n", ESP.getPsramSize(), ESP.getFreePsram());
-   rpmVorgabe = (speed * RPM_MAX) / 100.0;
+   // rpmVorgabe = (speed * RPM_MAX) / 100.0;
   // Serial.printf("RPM Value vorgabe Haupschleife vor Ã¼bergabe  = %d \n", (int)rpmVorgabe);
   // drive.rpmcontrol((unsigned int)rpmVorgabe);
   //Serial.printf("ganzzeit = %ld \n", ganzezeit);
 
-  double dT = (millis() - lastMillis) / 1000.0;
-  lastMillis = millis();
-  ganzezeit += (dT * 1000);
-  if (ganzezeit >= 200)
-  {
+//   double dT = (millis() - lastMillis) / 1000.0;
+//   lastMillis = millis();
+//   ganzezeit += (dT * 1000);
+//   if (ganzezeit >= 200)
+//   {
     //timer interrupt toggles pin LED_BUILTIN
     // digitalWrite(TOGGLEPIN2, toggle1);
     // toggle1 = !toggle1;
@@ -400,17 +410,17 @@ void loop()
     // }
 
     // if(rosSocket.client.connected()){
-    v = valueInt;
-
-    if (Sollwert > encValueRIGHT && Stellwert < 255)
-    {
-      Stellwert += 2;
-    }
-    else if (Sollwert < encValueRIGHT && Stellwert > 0){
-      Stellwert -= 2;
-    }
-    drive.setDutyMotor(MOTORRIGHT, Stellwert);
-    
+   //  v = valueInt;
+   // =================================================Wagner Regler
+   //  if (Sollwert > encValueRIGHT && Stellwert < 255)
+   //  {
+   //      Stellwert += 2;
+   //  }
+   //  else if (Sollwert < encValueRIGHT && Stellwert > 0){
+   //    Stellwert -= 2;
+   //  }
+   //  drive.setDutyMotor(MOTORRIGHT, Stellwert);
+   // =================================================
     // Serial.println("Stellwert:");
     // Serial.println(Stellwert);
     // Serial.println("encValeRight");
@@ -426,5 +436,5 @@ void loop()
     //   drive.update(dT, 0, 0);
     //   rosSocket.connectSocket();
 
-   }
+   // }
 }
