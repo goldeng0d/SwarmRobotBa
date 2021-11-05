@@ -55,7 +55,7 @@ void Drive::setspeed(const unsigned int motoNum, const int velocity)
   roboMotors.changeSpeed(MOTORRIGHT, velocity);
 }
 
-void Drive::setDutyMotor(const unsigned int motoNum, const int duty)
+void IRAM_ATTR Drive::setDutyMotor(const unsigned int motoNum, const int duty)
 {
   // output motor speed
   roboMotors.changeDuty(motoNum, duty);
@@ -168,12 +168,12 @@ void Drive::update(double dT, const double vel, const double omega){
 
 }
 
-int32_t Drive::getEncoderValueLEFT(void)
+int32_t IRAM_ATTR Drive::getEncoderValueLEFT(void)
 {
   return (roboEncoder.readAndResetLEFT());
 }
 
-int32_t Drive::getEncoderValueRIGHT(void)
+int32_t IRAM_ATTR Drive::getEncoderValueRIGHT(void)
 {
   return (roboEncoder.readAndResetRIGHT());
 }
@@ -184,10 +184,11 @@ int32_t Drive::getEncoderValueRIGHT(void)
 //    return;
 // }
 
-int32_t IRAM_ATTR Drive::IRegler(const int32_t Sollwertdrehzahl, const float dT, int32_t Stellwert, const int32_t Drehzahlvalue, const int32_t resolution, const float lowfraction)
+int32_t IRAM_ATTR Drive::IRegler(const int32_t Sollwertdrehzahl, const float dT, volatile int32_t Stellwert, const int32_t Drehzahlvalue, const int32_t resolution, const float lowfraction)
 {
    // roboEncoder.myupdates();
    int32_t high = 0;
+   int32_t Stellschritt = 0;
    // Although more comfortable DO NOT USE SWITCH CASE HERE OR THE PROGRAM CRASHES
    // This Look-up Table is a Lot faster than the power function.
    if (resolution == 8)
@@ -258,35 +259,42 @@ int32_t IRAM_ATTR Drive::IRegler(const int32_t Sollwertdrehzahl, const float dT,
       Serial.println("Error resolution not supported.");
    }
 
-   if (Sollwertdrehzahl > Drehzahlvalue && Stellwert < high)
+   Stellschritt = int32_t(high / 255);
+   if (Sollwertdrehzahl > Drehzahlvalue && Stellwert + Stellschritt <= high)
    {
-      Stellwert += 2;
+      if (Stellwert < high * lowfraction)
+      {
+         Stellwert = high * lowfraction;
+      }
+      Stellwert += Stellschritt;
    }
    // high * lowfraction to cap minimum Voltage, because if volatage to low on motor won't turn but 
-   else if (Sollwertdrehzahl < Drehzahlvalue && Stellwert > high * lowfraction) 
+   else if (Sollwertdrehzahl < Drehzahlvalue && Stellwert - Stellschritt > high * lowfraction) 
    {
-      Stellwert -= 2;
+      Stellwert -= Stellschritt;
    }
    return Stellwert;
 }
 
-int Drive::mapInteger(int x, int in_min, int in_max, int out_min, int out_max)
-{
-   double result;
-   result = (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
-   return (int)result;
-}
+// int Drive::mapInteger(int x, int in_min, int in_max, int out_min, int out_max)
+// {
+//    double result;
+//    result = (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+//    return (int)result;
+// }
 
-void Drive::updateEncoderAndRPM(unsigned long dT){
-  roboEncoder.myupdates();
-  leftrpmValue = CalculateRPMfromEncoderValue(roboEncoder.encoderLeft.counter, dT);
-  rightrpmValue = CalculateRPMfromEncoderValue(roboEncoder.encoderRight.counter, dT);
-  return;
-}
+// void Drive::updateEncoderAndRPM(unsigned long dT){
+//   roboEncoder.myupdates();
+//   leftrpmValue = CalculateRPMfromEncoderValue(roboEncoder.encoderLeft.counter, dT);
+//   rightrpmValue = CalculateRPMfromEncoderValue(roboEncoder.encoderRight.counter, dT);
+//   return;
+// }
 
-int32_t IRAM_ATTR Drive::CalculateRPMfromEncoderValue(int32_t encValue, unsigned long dT)
+// Calculate the RPM from the encoder value and the time difference
+float IRAM_ATTR Drive::CalculateRPMfromEncoderValue(const int32_t encValue, const unsigned long dT)
 {
-  return (((encValue / ENCODER_COUNTS_PER_REVOLUTION_MOTORSIDE) / (dT / MILLISEC_IN_SEC)) * SEC_IN_MIN);
+   float ret = ((encValue / (float)ENCODER_COUNTS_PER_REVOLUTION_MOTORSIDE) / (dT / (float)MILLISEC_IN_SEC)) * SEC_IN_MIN;
+   return ret;
 }
 
 // int8_t Drive::Zweipunktregler(int8_t Sollwert){

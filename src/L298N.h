@@ -4,6 +4,9 @@
 
 
 #include <Arduino.h>
+#include "soc/ledc_reg.h"
+#include "soc/ledc_struct.h"
+#define LEDC_CHAN(g, c) LEDC.channel_group[(g)].channel[(c)]
 
 struct Motor_pins{
 
@@ -56,7 +59,7 @@ class L298N{
        * @param[in] motoNum Motor number A = 1 | B = 2
        * @param[in] duty dutycyle in bits 0 ... 2^(resolution)
       */
-      void changeDuty(const unsigned int motoNum, const unsigned int duty);
+      void IRAM_ATTR changeDuty(const unsigned int motoNum, const unsigned int duty);
 
       /**
        * Change speed of motor in percent from 0% to 100%
@@ -104,11 +107,7 @@ class L298N{
       // Motor2 rotation direction
       motDirection motor2_direction;
 
-      
-
-
-
-
+      void IRAM_ATTR myledcWrite(uint8_t chan, uint32_t duty);
 };
 
 #endif

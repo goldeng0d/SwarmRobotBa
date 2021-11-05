@@ -12,7 +12,7 @@
 #define ENCODER_COUNTS_PER_REVOLUTION_MOTORSIDE 12
 #define PWM_RESOLUTION 8
 #define PWM_FREQUENCY 4000
-#define MOTOR_LOWFRACTION 0.25
+#define MOTOR_LOWFRACTION 0.27 // Tested manually low voltage
 #define MILLISEC_IN_SEC 1000
 #define SEC_IN_MIN 60
 #define RAMP_FRACTION_SLOW (1/5)
@@ -55,14 +55,15 @@ class Drive{
       void move(const int direction);
       void setspeed(const int velocity);
       void setspeed(const unsigned int motoNum, const int velocity);
-      void setDutyMotor(const unsigned int motoNum, const int duty);
+      void IRAM_ATTR setDutyMotor(const unsigned int motoNum, const int duty);
       int32_t IRAM_ATTR getEncoderValueLEFT(void);
       int32_t IRAM_ATTR getEncoderValueRIGHT(void);
-      void rpmcontrol(int rpmVorgabe);
-      void updateEncoderAndRPM(unsigned long dT);
-      int32_t CalculateRPMfromEncoderValue(int32_t encValue, unsigned long dT);
+      // void rpmcontrol(int rpmVorgabe);
+      // void updateEncoderAndRPM(unsigned long dT);
 
-      /**
+      float IRAM_ATTR CalculateRPMfromEncoderValue(const int32_t encValue, const unsigned long dT);
+
+          /**
       * PI-Controller with mit control signal limitation and anti-windup
       * 
       * @param[in] Sollwertdrehzahl Error which should become 0
@@ -72,7 +73,7 @@ class Drive{
       * @param[in] high maximum output limit
       * @param[in] low minimum input limit
       */
-      int32_t IRAM_ATTR IRegler(const int32_t Sollwertdrehzahl, const float dT, int32_t Stellwert, const int32_t Drehzahlvalue, const int32_t resolution, const float lowfraction);
+      int32_t IRAM_ATTR IRegler(const int32_t Sollwertdrehzahl, const float dT, volatile int32_t Stellwert, const int32_t Drehzahlvalue, const int32_t resolution, const float lowfraction);
 
    private:
 
@@ -97,7 +98,7 @@ class Drive{
       */
       float PIRegler(float error, float dt, float Kp, float Ki, float high, float low, float &iVal);
 
-      int mapInteger(int x, int in_min, int in_max, int out_min, int out_max);
+      // int mapInteger(int x, int in_min, int in_max, int out_min, int out_max);
 };
 
 #endif

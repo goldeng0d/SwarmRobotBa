@@ -10,7 +10,7 @@
 
 #define LOCAL_DEBUG 1
 #define TIMER_INTERRUPT_DEBUG 0
-#define TIMER0_INTERVAL_MS 1
+#define TIMER0_INTERVAL_MS 10
 #define TOGGLEPIN1 21
 #define TOGGLEPIN2 22
 
@@ -20,8 +20,8 @@ Adafruit_NeoPixel pixels = Adafruit_NeoPixel(NUM_LEDS, LEDPIN, NEO_GRB + NEO_KHZ
 uint8_t redvalue = 0, greenvalue = 0, bluevalue = 0;
 void showLEDs(int red, int green, int blue);
 
-// unsigned long lastMillis = 0;
-// volatile unsigned long ganzezeit = 0;
+unsigned long lastMillis = 0;
+volatile unsigned long ganzezeit = 0;
 // volatile double rpmVorgabe;
 // volatile int32_t encValueLEFT = 0;
 // volatile int32_t encValueRIGHT = 0;
@@ -34,8 +34,8 @@ double w;
 
 volatile int32_t encoderValueleft;
 volatile int32_t encoderValueright;
-volatile float leftrpmValue;
-volatile float rightrpmValue;
+volatile float leftrpmValue = 0.0;
+volatile float rightrpmValue = 0.0;
 float dT = TIMER0_INTERVAL_MS;
 volatile int32_t Stellwertlinks = 0;
 volatile int32_t Stellwertrechts = 0;
@@ -65,7 +65,7 @@ void IRAM_ATTR TimerHandler0(void)
    rightrpmValue = drive.CalculateRPMfromEncoderValue(encoderValueright, dT);
 
    Stellwertlinks = drive.IRegler(Sollwert, dT, Stellwertlinks, leftrpmValue, PWM_RESOLUTION, MOTOR_LOWFRACTION);
-   Stellwertlinks = drive.IRegler(Sollwert, dT, Stellwertlinks, leftrpmValue, PWM_RESOLUTION, MOTOR_LOWFRACTION);
+   Stellwertrechts = drive.IRegler(Sollwert, dT, Stellwertrechts, rightrpmValue, PWM_RESOLUTION, MOTOR_LOWFRACTION);
 
    drive.setDutyMotor(MOTORLEFT, Stellwertlinks);
    drive.setDutyMotor(MOTORRIGHT, Stellwertrechts);
@@ -149,17 +149,17 @@ const char *htmlHomePage PROGMEM = R"HTMLHOMEPAGE(
     <table id="mainTable" style="width:400px;margin:auto;table-layout:fixed" CELLSPACING=10>
       <tr>
         <td></td>
-        <td class="button" ontouchstart='sendButtonInput("MoveCar","1")' ontouchend='sendButtonInput("MoveCar","0")'><span class="arrows" >&#8679;</span></td>
+        <td class="button" ontouchstart='sendButtonInput("MoveCar","1")' onmousedown='sendButtonInput("MoveCar","1")' ontouchend='sendButtonInput("MoveCar","0")' onmouseup='sendButtonInput("MoveCar","0")'><span class="arrows" >&#8679;</span></td>
         <td></td>
       </tr>
       <tr>
-        <td class="button" ontouchstart='sendButtonInput("MoveCar","3")' ontouchend='sendButtonInput("MoveCar","0")'><span class="arrows" >&#8678;</span></td>
+        <td class="button" ontouchstart='sendButtonInput("MoveCar","3")' onmousedown='sendButtonInput("MoveCar","3")' ontouchend='sendButtonInput("MoveCar","0")' onmouseup='sendButtonInput("MoveCar","0")'><span class="arrows" >&#8678;</span></td>
         <td class="button"></td>    
-        <td class="button" ontouchstart='sendButtonInput("MoveCar","4")' ontouchend='sendButtonInput("MoveCar","0")'><span class="arrows" >&#8680;</span></td>
+        <td class="button" ontouchstart='sendButtonInput("MoveCar","4")' onmousedown='sendButtonInput("MoveCar","4")' ontouchend='sendButtonInput("MoveCar","0")' onmouseup='sendButtonInput("MoveCar","0")'><span class="arrows" >&#8680;</span></td>
       </tr>
       <tr>
         <td></td>
-        <td class="button" ontouchstart='sendButtonInput("MoveCar","2")' ontouchend='sendButtonInput("MoveCar","0")'><span class="arrows" >&#8681;</span></td>
+        <td class="button" ontouchstart='sendButtonInput("MoveCar","2")' onmousedown='sendButtonInput("MoveCar","2")' ontouchend='sendButtonInput("MoveCar","0")' onmouseup='sendButtonInput("MoveCar","0")'><span class="arrows" >&#8681;</span></td>
         <td></td>
       </tr>
       <tr/><tr/>
@@ -167,7 +167,7 @@ const char *htmlHomePage PROGMEM = R"HTMLHOMEPAGE(
         <td style="text-align:left"><b>Speed:</b></td>
         <td colspan=2>
          <div class="slidecontainer">
-            <input type="range" min="0" max="100" value="80" class="slider" id="Speed" oninput='sendButtonInput("Speed",value)'>
+            <input type="range" min="0" max="30000" value="20000" class="slider" id="Speed" oninput='sendButtonInput("Speed",value)'>
           </div>
         </td>
       </tr>        
@@ -296,7 +296,7 @@ void onCarInputWebSocketEvent(AsyncWebSocket *server,
       {
         //ledcWrite(PWMSpeedChannel, valueInt);
         speed = valueInt;
-        drive.setspeed(valueInt);
+      //   drive.setspeed(valueInt);
       }
       else if (key == "RED Light")
       {
@@ -343,7 +343,7 @@ void setup(){
   pinMode(TOGGLEPIN2, OUTPUT);
   timer0 = timerBegin(0, 80, true); // 12,5 ns * 80 = 1000ns = 1us
   timerAttachInterrupt(timer0, &TimerHandler0, /*true*/ false); //edge interrupts do not work, use false
-  timerAlarmWrite(timer0, 1000, true);
+  timerAlarmWrite(timer0, 10000, true); // 1us * 1000 = 1ms
   timerAlarmEnable(timer0);
 
   //Drive setup
@@ -371,7 +371,7 @@ void setup(){
 
 void loop()
 {
-  // drive.move(1);
+//   drive.move(1);
   wsCarInput.cleanupClients();
 
   // Serial.printf("main loop encvalue = %l\n", enccounter);
@@ -380,12 +380,12 @@ void loop()
   // Serial.printf("RPM Value vorgabe Haupschleife vor Ã¼bergabe  = %d \n", (int)rpmVorgabe);
   // drive.rpmcontrol((unsigned int)rpmVorgabe);
   //Serial.printf("ganzzeit = %ld \n", ganzezeit);
-
-//   double dT = (millis() - lastMillis) / 1000.0;
-//   lastMillis = millis();
-//   ganzezeit += (dT * 1000);
-//   if (ganzezeit >= 200)
-//   {
+  Sollwert = speed;
+  double Zeitdifferenz = (millis() - lastMillis) / 1000.0;
+  lastMillis = millis();
+  ganzezeit += (Zeitdifferenz * 1000);
+  if (ganzezeit >= 500)
+  {
     //timer interrupt toggles pin LED_BUILTIN
     // digitalWrite(TOGGLEPIN2, toggle1);
     // toggle1 = !toggle1;
@@ -397,18 +397,18 @@ void loop()
     // double rightrpmValue = (((double)encValueRIGHT / ENCODER_COUNTS_PER_REVOLUTION_MOTORSIDE) / (double)ganzezeit / 1000) * SEC_IN_MIN;
 
     // Serial.printf("Encoder Value Left  = %d \n", encValueLEFT);
-    // Serial.printf("Encoder Value Right = %d \n", encValueRIGHT);
-
-    // Serial.printf("MotorDrehzahl Value Left  = %f \n", leftrpmValue);
-    // Serial.printf("MotorDrehzahl Value Right = %f \n", rightrpmValue);
+      // Serial.printf("Encoder Value Right = %d \n", encValueRIGHT);
+      Serial.printf("Sollwert = %d\n", Sollwert);
+      // Serial.printf("MotorDrehzahl Value Left  = %f \n", leftrpmValue);
+      
     // Serial.println("dT = ");
     // Serial.println(ganzezeit);
     // digitalWrite(TOGGLEPIN2, toggle1);
     // toggle1 = !toggle1;
     //valueInt = Speed from User Interface
-    //   ganzezeit = 0;
+      ganzezeit = 0;
     // }
-
+   
     // if(rosSocket.client.connected()){
    //  v = valueInt;
    // =================================================Wagner Regler
@@ -421,20 +421,29 @@ void loop()
    //  }
    //  drive.setDutyMotor(MOTORRIGHT, Stellwert);
    // =================================================
-    // Serial.println("Stellwert:");
-    // Serial.println(Stellwert);
-    // Serial.println("encValeRight");
-    // Serial.println(encValueRIGHT);
+      // Serial.println("Stellwertrechtsvorher:");
+      // Serial.println(Stellwertrechts);
+      // drive.IRegler(Sollwert, dT, &Stellwertrechts, rightrpmValue, PWM_RESOLUTION, MOTOR_LOWFRACTION);
+      // Serial.printf("Stellwertrechts: %d\n", Stellwertrechts);
+      // rightrpmValue = drive.CalculateRPMfromEncoderValue(encoderValueright, dT);
+      // Serial.printf("MotorDrehzahl Value Right = %f \n", rightrpmValue);
+      // Serial.printf("MotorDrehzahl Value Left = %f \n", leftrpmValue);
+      // rightrpmValue = (((encoderValueright / (float)ENCODER_COUNTS_PER_REVOLUTION_MOTORSIDE) / (dT / MILLISEC_IN_SEC)) * SEC_IN_MIN);
+      // Serial.printf("MotorDrehzahl Value Right = %f \n", rightrpmValue);
+      // drive.setDutyMotor(MOTORRIGHT, Stellwertrechts);
+      // Serial.println("Stellwertrechtsnachher:");
+      // Serial.println(Stellwertrechts);
+      // Serial.printf("encValueRight: %d\n", encoderValueright);
 
-    //   Serial.println("connected...");
-    //   rosSocket.update(v, w);
-    //drive.update(dT, v, w);
+      //   Serial.println("connected...");
+      //   rosSocket.update(v, w);
+      //drive.update(dT, v, w);
 
-    // }else{
+      // }else{
 
-    //   Serial.println("not connected...");
-    //   drive.update(dT, 0, 0);
-    //   rosSocket.connectSocket();
+      //   Serial.println("not connected...");
+      //   drive.update(dT, 0, 0);
+      //   rosSocket.connectSocket();
 
-   // }
+   }
 }

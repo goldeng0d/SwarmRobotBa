@@ -36,19 +36,54 @@ void L298N::setup(){
     ledcAttachPin(motor2.enable, motor2.channel);
 
     // set duty cycle to 0
-    ledcWrite(motor1.channel, 0);
-    ledcWrite(motor2.channel, 0);
+    myledcWrite(motor1.channel, 0);
+    myledcWrite(motor2.channel, 0);
 }
 
-
-void L298N::changeDuty(unsigned int motoNum, unsigned int duty){
-
+void IRAM_ATTR L298N::changeDuty(unsigned int motoNum, unsigned int duty)
+{
     if(motoNum == 1){
-        ledcWrite(1, duty);
+        myledcWrite(1, duty);
     } else {
-        ledcWrite(2, duty);
+        myledcWrite(2, duty);
     }
+}
 
+// https://community.platformio.org/t/esp32-change-pwm-duty-cycle-in-interrupt-possible/24319
+void IRAM_ATTR L298N::myledcWrite(uint8_t chan, uint32_t duty)
+{
+    if (chan > 15)
+    {
+        return;
+    }
+    uint8_t group = (chan / 8), channel = (chan % 8);
+    LEDC_CHAN(group, channel).duty.duty = duty << 4; //25 bit (21.4)
+    if (duty)
+    {
+        LEDC_CHAN(group, channel).conf0.sig_out_en = 1; //This is the output enable control bit for channel
+        LEDC_CHAN(group, channel).conf1.duty_start = 1; //When duty_num duty_cycle and duty_scale has been configured. these register won't take effect until set duty_start. this bit is automatically cleared by hardware.
+        if (group)
+        {
+            LEDC_CHAN(group, channel).conf0.low_speed_update = 1;
+        }
+        else
+        {
+            LEDC_CHAN(group, channel).conf0.clk_en = 1;
+        }
+    }
+    else
+    {
+        LEDC_CHAN(group, channel).conf0.sig_out_en = 0; //This is the output enable control bit for channel
+        LEDC_CHAN(group, channel).conf1.duty_start = 0; //When duty_num duty_cycle and duty_scale has been configured. these register won't take effect until set duty_start. this bit is automatically cleared by hardware.
+        if (group)
+        {
+            LEDC_CHAN(group, channel).conf0.low_speed_update = 1;
+        }
+        else
+        {
+            LEDC_CHAN(group, channel).conf0.clk_en = 0;
+        }
+    }
 }
 
 int8_t L298N::changeSpeed(unsigned int motoNum, double percent){
