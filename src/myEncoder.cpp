@@ -243,7 +243,7 @@ int32_t myEncoder::readAndResetRIGHT()
   update(&libencoderRight);
   int32_t ret = libencoderLeft.position;
   libencoderLeft.position = 0;
-  interrupts();
+  // interrupts();
   return ret;
 }
 

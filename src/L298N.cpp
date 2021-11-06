@@ -4,40 +4,40 @@ L298N::L298N(unsigned int frequency, unsigned int resolution, Motor_pins mot1, M
     frequency_ = frequency;
     resolution_ = resolution;
 
-    motor1 = mot1;
-    motor2 = mot2;
+    motorright = mot1;
+    motorleft = mot2;
 }
 
 L298N::~L298N(){
-    ledcDetachPin(motor1.enable);
-    ledcDetachPin(motor2.enable);
+    ledcDetachPin(motorright.enable);
+    ledcDetachPin(motorleft.enable);
 }
 
 void L298N::setup(){
 
     // configre pins for output
-    pinMode(motor1.enable, OUTPUT);
-    pinMode(motor1.pin1, OUTPUT);
-    pinMode(motor1.pin2, OUTPUT);
+    pinMode(motorright.enable, OUTPUT);
+    pinMode(motorright.pin1, OUTPUT);
+    pinMode(motorright.pin2, OUTPUT);
 
-    pinMode(motor2.enable, OUTPUT);
-    pinMode(motor2.pin1, OUTPUT);
-    pinMode(motor2.pin2, OUTPUT);
+    pinMode(motorleft.enable, OUTPUT);
+    pinMode(motorleft.pin1, OUTPUT);
+    pinMode(motorleft.pin2, OUTPUT);
 
     // set default rotation direction to forward
     changeDirection(1, motDirection::FORWARD);
     changeDirection(2, motDirection::FORWARD);
 
     // connect PWM output to pin on set channel through hardware abstraction amtrix
-    ledcSetup(motor1.channel, frequency_, resolution_);
-    ledcAttachPin(motor1.enable, motor1.channel);
+    ledcSetup(motorright.channel, frequency_, resolution_);
+    ledcAttachPin(motorright.enable, motorright.channel);
 
-    ledcSetup(motor2.channel, frequency_, resolution_);
-    ledcAttachPin(motor2.enable, motor2.channel);
+    ledcSetup(motorleft.channel, frequency_, resolution_);
+    ledcAttachPin(motorleft.enable, motorleft.channel);
 
     // set duty cycle to 0
-    myledcWrite(motor1.channel, 0);
-    myledcWrite(motor2.channel, 0);
+    myledcWrite(motorright.channel, 0);
+    myledcWrite(motorleft.channel, 0);
 }
 
 void IRAM_ATTR L298N::changeDuty(unsigned int motoNum, unsigned int duty)
@@ -106,21 +106,21 @@ void L298N::changeDirection(unsigned int motoNum, motDirection direction){
 
         switch(direction){
             case motDirection::FORWARD:{
-                digitalWrite(motor1.enable, LOW);
-                digitalWrite(motor1.pin1, HIGH);
-                digitalWrite(motor1.pin2, LOW);
+                digitalWrite(motorright.enable, LOW);
+                digitalWrite(motorright.pin1, HIGH);
+                digitalWrite(motorright.pin2, LOW);
                 break;
             }
             case motDirection::BACKWARD:{
-                digitalWrite(motor1.enable, LOW);
-                digitalWrite(motor1.pin1, LOW);
-                digitalWrite(motor1.pin2, HIGH);
+                digitalWrite(motorright.enable, LOW);
+                digitalWrite(motorright.pin1, LOW);
+                digitalWrite(motorright.pin2, HIGH);
                 break;
             }
             case motDirection::BREAKING:{
-                digitalWrite(motor1.enable, LOW);
-                digitalWrite(motor1.pin1, LOW);
-                digitalWrite(motor1.pin2, LOW);
+                digitalWrite(motorright.enable, LOW);
+                digitalWrite(motorright.pin1, LOW);
+                digitalWrite(motorright.pin2, LOW);
                 break;
             }
         }
@@ -129,21 +129,21 @@ void L298N::changeDirection(unsigned int motoNum, motDirection direction){
         
         switch(direction){
             case motDirection::FORWARD:{
-                digitalWrite(motor2.enable, LOW);
-                digitalWrite(motor2.pin1, HIGH);
-                digitalWrite(motor2.pin2, LOW);
+                digitalWrite(motorleft.enable, LOW);
+                digitalWrite(motorleft.pin1, HIGH);
+                digitalWrite(motorleft.pin2, LOW);
                 break;
             }
             case motDirection::BACKWARD:{
-                digitalWrite(motor2.enable, LOW);
-                digitalWrite(motor2.pin1, LOW);
-                digitalWrite(motor2.pin2, HIGH);
+                digitalWrite(motorleft.enable, LOW);
+                digitalWrite(motorleft.pin1, LOW);
+                digitalWrite(motorleft.pin2, HIGH);
                 break;
             }
             case motDirection::BREAKING:{
-                digitalWrite(motor2.enable, LOW);
-                digitalWrite(motor2.pin1, LOW);
-                digitalWrite(motor2.pin2, LOW);
+                digitalWrite(motorleft.enable, LOW);
+                digitalWrite(motorleft.pin1, LOW);
+                digitalWrite(motorleft.pin2, LOW);
                 break;
             }
         }

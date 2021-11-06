@@ -33,10 +33,10 @@ class L298N{
        * 
        * @param[in] frequency PWM Frequency - does not matter too much for L298N
        * @param[in] resolution resolution of dutycyle in bits 0 ... 2^(resolution)
-       * @param[in] mot1 Motor 1 configuration
-       * @param[in] mot2 Motor 2 configuration
+       * @param[in] motright Motor 1 configuration
+       * @param[in] motleft Motor 2 configuration
       */
-      L298N(const unsigned int frequency, const unsigned int resolution, const Motor_pins mot1, const Motor_pins mot2);
+      L298N(const unsigned int frequency, const unsigned int resolution, const Motor_pins motright, const Motor_pins motleft);
 
       /**
        * detatch PWM function from GPIO Pin matrix
@@ -44,12 +44,7 @@ class L298N{
       ~L298N();
 
       /**
-       * Constructor
-       * 
-       * @param[in] frequency PWM Frequency - does not matter too much for L298N
-       * @param[in] resolution resolution of dutycyle in bits 0 ... 2^(resolution)
-       * @param[in] mot1 Motor 1 configuration
-       * @param[in] mot2 Motor 2 configuration
+       * Setup PINS and PWM
       */
       void setup();
 
@@ -98,14 +93,14 @@ class L298N{
       unsigned int resolution_;
 
       // Motor 1 Config
-      Motor_pins motor1;
+      Motor_pins motorright;
       // Motor 2 Config
-      Motor_pins motor2;
+      Motor_pins motorleft;
 
       // Motor1 rotation direction
-      motDirection motor1_direction;
+      motDirection motorright_direction;
       // Motor2 rotation direction
-      motDirection motor2_direction;
+      motDirection motorleft_direction;
 
       void IRAM_ATTR myledcWrite(uint8_t chan, uint32_t duty);
 };

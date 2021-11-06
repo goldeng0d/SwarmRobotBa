@@ -11,6 +11,79 @@ unsigned long lastMillisecafterBoot = 0;
 
 Drive::Drive()
 {
+   
+   // Although more comfortable DO NOT USE SWITCH CASE HERE OR THE PROGRAM CRASHES
+   // This Look-up Table is a lot faster than the power function.
+   if(PWM_RESOLUTION == 8)
+   {
+      maxPWMvalue = 255; // 2^8 - 1
+   }
+   else if (PWM_RESOLUTION == 10)
+   {
+      maxPWMvalue = 1023; // 2^10 - 1
+   }
+   else if (PWM_RESOLUTION == 12)
+   {
+      maxPWMvalue = 4095; // 2^12 - 1
+   }
+   else if (PWM_RESOLUTION == 14)
+   {
+      maxPWMvalue = 16383; // 2^14 - 1
+   }
+   else if (PWM_RESOLUTION == 16)
+   {
+      maxPWMvalue = 65535; // 2^16 - 1
+   }
+   else if (PWM_RESOLUTION == 1) //very uncommon to use uneven PWM_RESOLUTIONs but technically possible
+   {
+      maxPWMvalue = 1; // 2^1 - 1
+   }
+   else if (PWM_RESOLUTION == 2)
+   {
+      maxPWMvalue = 3; // 2^2 - 1
+   }
+   else if (PWM_RESOLUTION == 3)
+   {
+      maxPWMvalue = 7; // 2^3 - 1
+   }
+   else if (PWM_RESOLUTION == 4)
+   {
+      maxPWMvalue = 15; // 2^4 - 1
+   }
+   else if (PWM_RESOLUTION == 5)
+   {
+      maxPWMvalue = 31; // 2^5 - 1
+   }
+   else if (PWM_RESOLUTION == 6)
+   {
+      maxPWMvalue = 63; // 2^6 - 1
+   }
+   else if (PWM_RESOLUTION == 7)
+   {
+      maxPWMvalue = 127; // 2^7 - 1
+   }
+   else if (PWM_RESOLUTION == 9)
+   {
+      maxPWMvalue = 511; // 2^9 - 1
+   }
+   else if (PWM_RESOLUTION == 11)
+   {
+      maxPWMvalue = 2047; // 2^11 - 1
+   }
+   else if (PWM_RESOLUTION == 13)
+   {
+      maxPWMvalue = 8191; // 2^13 - 1
+   }
+   else if (PWM_RESOLUTION == 15)
+   {
+      maxPWMvalue = 32767; // 2^15 - 1
+   }
+   else
+   {
+      Serial.println("Error PWM_RESOLUTION not supported.");
+   }
+   minPWMvaluestartturn = (int32_t((float)maxPWMvalue * MOTOR_LOWFRACTION_STARTTURN));
+   minPWMvalueturning = (int32_t((float)maxPWMvalue * MOTOR_LOWFRACTION_TURNING));
 }
 
 Drive::~Drive(){
@@ -178,110 +251,36 @@ int32_t IRAM_ATTR Drive::getEncoderValueRIGHT(void)
   return (roboEncoder.readAndResetRIGHT());
 }
 
-// void IRAM_ATTR Drive::rpmcontrol(int rpmVorgabe, int32_t &encoderValueleft, int32_t &encoderValueright)
-// {
-
-//    return;
-// }
-
-int32_t IRAM_ATTR Drive::IRegler(const int32_t Sollwertdrehzahl, const float dT, volatile int32_t Stellwert, const int32_t Drehzahlvalue, const int32_t resolution, const float lowfraction)
+int32_t IRAM_ATTR Drive::IRegler(const uint32_t Sollwertdrehzahl, volatile uint32_t Stellwert, const uint32_t Drehzahlvalue)
 {
-   // roboEncoder.myupdates();
-   int32_t high = 0;
-   int32_t Stellschritt = 0;
-   // Although more comfortable DO NOT USE SWITCH CASE HERE OR THE PROGRAM CRASHES
-   // This Look-up Table is a Lot faster than the power function.
-   if (resolution == 8)
-   {
-      high = 255;
-   }
-   else if (resolution == 10)
-   {
-      high = 1023;
-   }
-   else if (resolution == 12)
-   {
-      high = 4095;
-   }
-   else if (resolution == 14)
-   {
-      high = 16383;
-   }
-   else if (resolution == 16)
-   {
-      high = 65535;
-   }
-   else if (resolution == 1) //very uncommon to use uneven resolutions but possible
-   {
-      high = 1;
-   }
-   else if (resolution == 2)
-   {
-      high = 3;
-   }
-   else if (resolution == 3)
-   {
-      high = 7;
-   }
-   else if (resolution == 4)
-   {
-      high = 15;
-   }
-   else if (resolution == 5)
-   {
-      high = 31;
-   }
-   else if (resolution == 6)
-   {
-      high = 63;
-   }
-   else if (resolution == 7)
-   {
-      high = 127;
-   }
-   else if (resolution == 9)
-   {
-      high = 511;
-   }
-   else if (resolution == 11)
-   {
-      high = 2047;
-   }
-   else if (resolution == 13)
-   {
-      high = 8191;
-   }
-   else if (resolution == 15)
-   {
-      high = 32767;
-   }
-   else{
-      Serial.println("Error resolution not supported.");
-   }
 
-   Stellschritt = int32_t(high / 255);
-   if (Sollwertdrehzahl > Drehzahlvalue && Stellwert + Stellschritt <= high)
+   // maxPWMvalue = highest PWM value
+   // minPWMvalueturning = lowest PWM value while turning
+
+   uint32_t Stellschritt = 0;
+
+   Stellschritt = uint32_t(maxPWMvalue / 255);
+   // Increase Output DutyCycle if Sollwertdrehzahl > Drehzahlvalue but,
+   // maxPWMvalue to cap maximum Voltage, because PWM has a limit where DutyCycle = 100%
+   if (Sollwertdrehzahl > Drehzahlvalue && Stellwert + Stellschritt <= maxPWMvalue)
    {
-      if (Stellwert < high * lowfraction)
-      {
-         Stellwert = high * lowfraction;
-      }
       Stellwert += Stellschritt;
    }
-   // high * lowfraction to cap minimum Voltage, because if volatage to low on motor won't turn but 
-   else if (Sollwertdrehzahl < Drehzahlvalue && Stellwert - Stellschritt > high * lowfraction) 
+   // Lower Output DutyCycle if Sollwertdrehzahl < Drehzahlvalue but,
+   // minPWMvalueturning to cap minimum Voltage, because if volatage to low on motor won't turn
+   else if (Sollwertdrehzahl < Drehzahlvalue && Stellwert - Stellschritt > minPWMvalueturning)
    {
       Stellwert -= Stellschritt;
    }
    return Stellwert;
 }
 
-// int Drive::mapInteger(int x, int in_min, int in_max, int out_min, int out_max)
-// {
-//    double result;
-//    result = (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
-//    return (int)result;
-// }
+int32_t IRAM_ATTR Drive::mapInteger(const float x, const float in_min, const float in_max, const float out_min, const float out_max)
+{
+   float result;
+   result = (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+   return (int32_t)result;
+}
 
 // void Drive::updateEncoderAndRPM(unsigned long dT){
 //   roboEncoder.myupdates();
@@ -291,14 +290,8 @@ int32_t IRAM_ATTR Drive::IRegler(const int32_t Sollwertdrehzahl, const float dT,
 // }
 
 // Calculate the RPM from the encoder value and the time difference
-float IRAM_ATTR Drive::CalculateRPMfromEncoderValue(const int32_t encValue, const unsigned long dT)
+float IRAM_ATTR Drive::CalculateRPMfromEncoderValue(const int32_t encValue, const float dT)
 {
-   float ret = ((encValue / (float)ENCODER_COUNTS_PER_REVOLUTION_MOTORSIDE) / (dT / (float)MILLISEC_IN_SEC)) * SEC_IN_MIN;
+   float ret = (((float)encValue / (float)ENCODER_COUNTS_PER_REVOLUTION_MOTORSIDE) / (dT / (float)MILLISEC_IN_SEC)) * (float)SEC_IN_MIN;
    return ret;
 }
-
-// int8_t Drive::Zweipunktregler(int8_t Sollwert){
-//   int8_t Stellwert;
-//   if (Sollwert)
-//   return Stellwert;
-// }
