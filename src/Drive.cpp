@@ -4,7 +4,7 @@
 // settings made here -> later create a configuration header with defines
 myEncoder roboEncoder(50.0, 66.5, 12, {4, 5}, {35, 34});
 //myEncoder roboEncoder(50.0, 66.5, 1200, {4, 5}, {34, 35});
-L298N roboMotors(PWM_FREQUENCY, PWM_RESOLUTION, {17, 18, 16, 2}, {33, 32, 19, 1});
+L298N roboMotors(PWM_FREQUENCY, PWM_RESOLUTION, {17, 18, 16, 1}, {33, 32, 19, 2});
 //L298N roboMotors(4000, 8, {17, 18, 16, 2}, {32, 33, 19, 1});
 
 unsigned long lastMillisecafterBoot = 0;

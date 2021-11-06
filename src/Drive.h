@@ -22,8 +22,9 @@
 #define LEFT 3
 #define RIGHT 4
 #define STOP 0
-#define MOTORLEFT 1
-#define MOTORRIGHT 2
+#define MOTORRIGHT 1
+#define MOTORLEFT 2
+
 
 // #define DEBUG_WHEEL_CONTROLLER_LEFT
 
