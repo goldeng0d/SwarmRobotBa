@@ -10,10 +10,11 @@
 
 #define WHEEL_DISTANCE_L 0.140 // 140mm // our BARobot has ~110mm
 #define ENCODER_COUNTS_PER_REVOLUTION_MOTORSIDE 12
-#define PWM_RESOLUTION 8
+#define PWM_RESOLUTION 10
 #define PWM_FREQUENCY 4000
 #define MOTOR_LOWFRACTION_STARTTURN 0.27 //  low voltage for motor that needs more voltage is 0.55 and 0.27 for motor that needs less voltage
 #define MOTOR_LOWFRACTION_TURNING 0.07 // the motor can go as low as 7% of it's nominal RPM
+#define ALLOWABLE_ERROR_RPM 100 // the motor rpm is allowd to be 100 RPM off the other Motor's RPM
 #define MILLISEC_IN_SEC 1000
 #define SEC_IN_MIN 60
 #define RPM_MAX 30000
@@ -90,6 +91,7 @@ class Drive{
         float iVal_leftWheel;
         volatile int32_t rightrpmValue;
         volatile int32_t leftrpmValue;
+        uint32_t Adjustingstep;
 
         /**
          * PI-Controller with mit control signal limitation and anti-windup

@@ -17,66 +17,82 @@ Drive::Drive()
    if(PWM_RESOLUTION == 8)
    {
       maxPWMvalue = 255; // 2^8 - 1
+      Adjustingstep = uint32_t(maxPWMvalue / 255);
    }
    else if (PWM_RESOLUTION == 10)
    {
       maxPWMvalue = 1023; // 2^10 - 1
+      Adjustingstep = uint32_t(maxPWMvalue / 255);
    }
    else if (PWM_RESOLUTION == 12)
    {
       maxPWMvalue = 4095; // 2^12 - 1
+      Adjustingstep = uint32_t(maxPWMvalue / 255);
    }
    else if (PWM_RESOLUTION == 14)
    {
       maxPWMvalue = 16383; // 2^14 - 1
+      Adjustingstep = uint32_t(maxPWMvalue / 255);
    }
    else if (PWM_RESOLUTION == 16)
    {
       maxPWMvalue = 65535; // 2^16 - 1
+      Adjustingstep = uint32_t(maxPWMvalue / 255);
    }
    else if (PWM_RESOLUTION == 1) //very uncommon to use uneven PWM_RESOLUTIONs but technically possible
    {
       maxPWMvalue = 1; // 2^1 - 1
+      Adjustingstep = uint32_t(maxPWMvalue / 255);
    }
    else if (PWM_RESOLUTION == 2)
    {
       maxPWMvalue = 3; // 2^2 - 1
+      Adjustingstep = uint32_t(maxPWMvalue / 255);
    }
    else if (PWM_RESOLUTION == 3)
    {
       maxPWMvalue = 7; // 2^3 - 1
+      Adjustingstep = uint32_t(maxPWMvalue / 255);
    }
    else if (PWM_RESOLUTION == 4)
    {
       maxPWMvalue = 15; // 2^4 - 1
+      Adjustingstep = uint32_t(maxPWMvalue / 255);
    }
    else if (PWM_RESOLUTION == 5)
    {
       maxPWMvalue = 31; // 2^5 - 1
+      Adjustingstep = uint32_t(maxPWMvalue / 255);
    }
    else if (PWM_RESOLUTION == 6)
    {
       maxPWMvalue = 63; // 2^6 - 1
+      Adjustingstep = uint32_t(maxPWMvalue / 255);
    }
    else if (PWM_RESOLUTION == 7)
    {
       maxPWMvalue = 127; // 2^7 - 1
+      Adjustingstep = uint32_t(maxPWMvalue / 255);
    }
    else if (PWM_RESOLUTION == 9)
    {
       maxPWMvalue = 511; // 2^9 - 1
+      Adjustingstep = uint32_t(maxPWMvalue / 255);
    }
    else if (PWM_RESOLUTION == 11)
    {
       maxPWMvalue = 2047; // 2^11 - 1
+      Adjustingstep = uint32_t(maxPWMvalue / 255);
    }
    else if (PWM_RESOLUTION == 13)
    {
       maxPWMvalue = 8191; // 2^13 - 1
+      Adjustingstep = uint32_t(maxPWMvalue / 255);
    }
    else if (PWM_RESOLUTION == 15)
    {
       maxPWMvalue = 32767; // 2^15 - 1
+      Adjustingstep = uint32_t(maxPWMvalue / 255);
    }
    else
    {
@@ -257,20 +273,17 @@ int32_t IRAM_ATTR Drive::IRegler(const uint32_t Sollwertdrehzahl, volatile uint3
    // maxPWMvalue = highest PWM value
    // minPWMvalueturning = lowest PWM value while turning
 
-   uint32_t Stellschritt = 0;
-
-   Stellschritt = uint32_t(maxPWMvalue / 255);
    // Increase Output DutyCycle if Sollwertdrehzahl > Drehzahlvalue but,
    // maxPWMvalue to cap maximum Voltage, because PWM has a limit where DutyCycle = 100%
-   if (Sollwertdrehzahl > Drehzahlvalue && Stellwert + Stellschritt <= maxPWMvalue)
+   if (Sollwertdrehzahl > Drehzahlvalue && Stellwert + Adjustingstep <= maxPWMvalue)
    {
-      Stellwert += Stellschritt;
+      Stellwert += Adjustingstep;
    }
    // Lower Output DutyCycle if Sollwertdrehzahl < Drehzahlvalue but,
    // minPWMvalueturning to cap minimum Voltage, because if volatage to low on motor won't turn
-   else if (Sollwertdrehzahl < Drehzahlvalue && Stellwert - Stellschritt > minPWMvalueturning)
+   else if (Sollwertdrehzahl < Drehzahlvalue && Stellwert - Adjustingstep > minPWMvalueturning)
    {
-      Stellwert -= Stellschritt;
+      Stellwert -= Adjustingstep;
    }
    return Stellwert;
 }
@@ -281,13 +294,6 @@ int32_t IRAM_ATTR Drive::mapInteger(const float x, const float in_min, const flo
    result = (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
    return (int32_t)result;
 }
-
-// void Drive::updateEncoderAndRPM(unsigned long dT){
-//   roboEncoder.myupdates();
-//   leftrpmValue = CalculateRPMfromEncoderValue(roboEncoder.encoderLeft.counter, dT);
-//   rightrpmValue = CalculateRPMfromEncoderValue(roboEncoder.encoderRight.counter, dT);
-//   return;
-// }
 
 // Calculate the RPM from the encoder value and the time difference
 float IRAM_ATTR Drive::CalculateRPMfromEncoderValue(const int32_t encValue, const float dT)

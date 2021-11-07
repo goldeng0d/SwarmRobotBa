@@ -10,7 +10,7 @@
 
 #define LOCAL_DEBUG 1
 #define TIMER_INTERRUPT_DEBUG 0
-#define TIMER0_INTERVAL_MS 20
+#define TIMER0_INTERVAL_MS 50
 #define TIMER0_INTERVAL_US 1000 * TIMER0_INTERVAL_MS
 #define TOGGLEPIN1 21
 #define TOGGLEPIN2 22
@@ -286,8 +286,8 @@ void onCarInputWebSocketEvent(AsyncWebSocket *server,
         {
            drive.setDutyMotor(MOTORLEFT, 0);
            drive.setDutyMotor(MOTORRIGHT, 0);
-           Controlvalueleft = 2.0 * drive.minPWMvaluestartturn;
-           Controlvalueright = 1.45 * drive.minPWMvaluestartturn;
+           Controlvalueleft = 2.2 * drive.minPWMvaluestartturn;
+           Controlvalueright = 1.69 * drive.minPWMvaluestartturn;
            leftrpmValue = 0;
            rightrpmValue = 0;
         }
@@ -373,9 +373,9 @@ void setup(){
   drive.move(1);
 
   //Adjust Motor differences and start values for Motors here and in onCarInputWebSocketEvent (movement == 0)
-  Controlvalueleft = 2.0 * drive.minPWMvaluestartturn;  //~150 for resolution == 8bit, adjusting up for worse motor
-  Controlvalueright = 1.45 * drive.minPWMvaluestartturn; //~90 for resolution == 8bit, adjusting to match initial speed of motorleft
-  
+  Controlvalueleft = 2.2 * drive.minPWMvaluestartturn;  //~150 for resolution == 8bit, adjusting up for worse motor
+  Controlvalueright = 1.69 * drive.minPWMvaluestartturn; //~90 for resolution == 8bit, adjusting to match initial speed of motorleft
+
   // The above Ratio is calibrated Manually it could be automated by running a calibration in setup() 
   // where the calibration is done at a fixed RPM -> when both Motors are at the same RPM both Stellwert values can be taken to get that ratio
   // set the Ratio for the next move of the car see (movement == 0) to this ratio where higher value is around 60% of maxPWMvalue to get a good Starting RPM where both Motors have close to equal RPM
@@ -396,7 +396,7 @@ void loop()
   lastMillis = millis();
   min500mstimer += (timedifference * 1000);
   min5mstimer += (timedifference * 1000);
-  if (min5mstimer >= 200)
+  if (min5mstimer >= 50)
   {
     min5mstimer = 0;
     if (movement > 0) // while moving in any Direction
@@ -420,6 +420,7 @@ void loop()
       rightrpmValue = drive.CalculateRPMfromEncoderValue(encoderValueright, dT);
       Controlvalueleft = drive.IRegler(DesiredRPM, Controlvalueleft, (uint32_t)leftrpmValue);
       Controlvalueright = drive.IRegler(DesiredRPM, Controlvalueright, (uint32_t)rightrpmValue);
+      Controlvalueright = drive.IRegler(leftrpmValue, Controlvalueright, (uint32_t)rightrpmValue);
       drive.setDutyMotor(MOTORLEFT, Controlvalueleft);
       drive.setDutyMotor(MOTORRIGHT, Controlvalueright);
         
@@ -436,8 +437,8 @@ void loop()
       // encValueRIGHT = drive.getEncoderValueRIGHT();
 
       Serial.println("\n"); //here
-      Serial.printf("Encoder Value Left Interrupt  = %d \n", encoderValueleft); //here
-      Serial.printf("Encoder Value Right Interrupt = %d \n", encoderValueright); //here
+      // Serial.printf("Encoder Value Left Interrupt  = %d \n", encoderValueleft); //here
+      // Serial.printf("Encoder Value Right Interrupt = %d \n", encoderValueright); //here
       // Serial.printf("DesiredRPM = %d\n", DesiredRPM);
 
       // Serial.println("min500mstimer = ");
