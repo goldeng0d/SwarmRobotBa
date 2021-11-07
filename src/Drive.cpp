@@ -265,25 +265,25 @@ int32_t IRAM_ATTR Drive::getEncoderValueRIGHT(void)
   return (roboEncoder.readAndResetRIGHT());
 }
 
-int32_t IRAM_ATTR Drive::IRegler(const uint32_t Sollwertdrehzahl, volatile uint32_t Stellwert, const uint32_t Drehzahlvalue)
+int32_t IRAM_ATTR Drive::TwoPointRegulator(const uint32_t DesiredRPM, volatile uint32_t Controlvalue, const uint32_t MotorRPM)
 {
 
    // maxPWMvalue = highest PWM value
    // minPWMvalueturning = lowest PWM value while turning
 
-   // Increase Output DutyCycle if Sollwertdrehzahl > Drehzahlvalue but,
+   // Increase Output DutyCycle if DesiredRPM > MotorRPM but,
    // maxPWMvalue to cap maximum Voltage, because PWM has a limit where DutyCycle = 100%
-   if (Sollwertdrehzahl > Drehzahlvalue && Stellwert + Adjustingstep <= maxPWMvalue)
+   if (DesiredRPM > MotorRPM && Controlvalue + Adjustingstep <= maxPWMvalue)
    {
-      Stellwert += Adjustingstep;
+      Controlvalue += Adjustingstep;
    }
-   // Lower Output DutyCycle if Sollwertdrehzahl < Drehzahlvalue but,
+   // Lower Output DutyCycle if DesiredRPM < MotorRPM but,
    // minPWMvalueturning to cap minimum Voltage, because if volatage to low on motor won't turn
-   else if (Sollwertdrehzahl < Drehzahlvalue && Stellwert - Adjustingstep > minPWMvalueturning)
+   else if (DesiredRPM < MotorRPM && Controlvalue - Adjustingstep > minPWMvalueturning)
    {
-      Stellwert -= Adjustingstep;
+      Controlvalue -= Adjustingstep;
    }
-   return Stellwert;
+   return Controlvalue;
 }
 
 int32_t IRAM_ATTR Drive::mapInteger(const float x, const float in_min, const float in_max, const float out_min, const float out_max)

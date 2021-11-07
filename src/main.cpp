@@ -12,6 +12,8 @@
 #define TIMER_INTERRUPT_DEBUG 0
 #define TIMER0_INTERVAL_MS 25
 #define TIMER0_INTERVAL_US 1000 * TIMER0_INTERVAL_MS
+#define MAINLOOP_TIMER_RPMCONTROL 25
+#define MAINLOOP_TIMER_DEBUG 1000
 #define TOGGLEPIN1 21
 #define TOGGLEPIN2 22
 #define STARTUPFACTORLEFT 2.2
@@ -24,9 +26,8 @@ uint8_t redvalue = 0, greenvalue = 0, bluevalue = 0;
 void showLEDs(int red, int green, int blue);
 
 float lastMillis = 0;
-volatile float min500mstimer = 0;
-volatile float min5mstimer = 0;
-// volatile double rpmVorgabe;
+volatile float min1000mstimer = 0;
+volatile float min25mstimer = 0;
 volatile int32_t encValueLEFT = 0;
 volatile int32_t encValueRIGHT = 0;
 volatile int valueInt = 0;
@@ -61,8 +62,8 @@ void IRAM_ATTR TimerHandler0(void)
   // leftrpmValue = drive.CalculateRPMfromEncoderValue(encoderValueleft, dT); // floating point operation in ISR is bad
   // rightrpmValue = drive.CalculateRPMfromEncoderValue(encoderValueright, dT); // floating point operation in ISR is bad
 
-  // Controlvalueleft = drive.IRegler(DesiredRPM, Controlvalueleft, (uint32_t)leftrpmValue);
-  // Controlvalueright = drive.IRegler(DesiredRPM, Controlvalueright, (uint32_t)rightrpmValue);
+  // Controlvalueleft = drive.TwoPointRegulator(DesiredRPM, Controlvalueleft, (uint32_t)leftrpmValue);
+  // Controlvalueright = drive.TwoPointRegulator(DesiredRPM, Controlvalueright, (uint32_t)rightrpmValue);
 }
 
 //Websocket for Car Control
@@ -389,18 +390,19 @@ void loop()
   // Clear Inactive Clients 
   wsCarInput.cleanupClients();
 
-//   // Serial.printf("main loop encvalue = %l\n", enccounter);
-//   // Serial.printf("SPIRam Total heap %d, SPIRam Free Heap %d\n", ESP.getPsramSize(), ESP.getFreePsram());
-//   // Serial.printf("RPM Value vorgabe Haupschleife vor Uebergabe  = %d \n", speed);
-//   //Serial.printf("ganzzeit = %ld \n", min500mstimer);
+  //   // Serial.printf("main loop encvalue = %l\n", enccounter);
+  //   // Serial.printf("SPIRam Total heap %d, SPIRam Free Heap %d\n", ESP.getPsramSize(), ESP.getFreePsram());
+  //   // Serial.printf("RPM Value vorgabe Haupschleife vor Uebergabe  = %d \n", speed);
+  //   //Serial.printf("ganzzeit = %ld \n", min1000mstimer);
+  // Get RPM from UI
   DesiredRPM = speed;
-  float timedifference = ((float)millis() - lastMillis) / (float)1000;
-  lastMillis = millis();
-  min500mstimer += (timedifference * 1000);
-  min5mstimer += (timedifference * 1000);
-  if (min5mstimer >= 25)
+  float timedifference = ((float)millis() - lastMillis);
+  lastMillis = (float)millis();
+  min1000mstimer += (timedifference);
+  min25mstimer += (timedifference);
+  if (min25mstimer >= MAINLOOP_TIMER_RPMCONTROL)
   {
-    min5mstimer = 0;
+    min25mstimer = 0;
     if (movement > 0) // while moving in any Direction
     {
       // Moving Direction of Motors can be obtained by evaluating the sign of encoder value here
@@ -413,23 +415,21 @@ void loop()
       {
         encoderValueright = -encoderValueright;
       }
-
       // The Basic Idea is that every 20ms the Encoder value is read in TimerInterrupt0
       // and the RPM value Value for the left and right Motors is calculated form the Encoder Value and the time difference 20ms from the Timer.
-      // Then Adjust the PWM Value for the Motors
-      // Then Output the PWM Value for the Motors
       leftrpmValue = drive.CalculateRPMfromEncoderValue(encoderValueleft, dT);
       rightrpmValue = drive.CalculateRPMfromEncoderValue(encoderValueright, dT);
-      Controlvalueleft = drive.IRegler(DesiredRPM, Controlvalueleft, (uint32_t)leftrpmValue);
-      Controlvalueright = drive.IRegler(DesiredRPM, Controlvalueright, (uint32_t)rightrpmValue);
-      Controlvalueright = drive.IRegler(leftrpmValue, Controlvalueright, (uint32_t)rightrpmValue);
+      // Then Adjust the PWM Value for the Motors
+      Controlvalueleft = drive.TwoPointRegulator(DesiredRPM, Controlvalueleft, (uint32_t)leftrpmValue);
+      Controlvalueright = drive.TwoPointRegulator(DesiredRPM, Controlvalueright, (uint32_t)rightrpmValue);
+      Controlvalueright = drive.TwoPointRegulator(leftrpmValue, Controlvalueright, (uint32_t)rightrpmValue);
+      // Then Output the PWM Value for the Motors
       drive.setDutyMotor(MOTORLEFT, Controlvalueleft);
       drive.setDutyMotor(MOTORRIGHT, Controlvalueright);
-        
      }
      
   }
-  if(min500mstimer >= 1000)
+  if (min1000mstimer >= MAINLOOP_TIMER_DEBUG)
   {
       //timer interrupt toggles pin LED_BUILTIN
       // digitalWrite(TOGGLEPIN2, toggle1);
@@ -443,11 +443,11 @@ void loop()
       // Serial.printf("Encoder Value Right Interrupt = %d \n", encoderValueright); //here
       // Serial.printf("DesiredRPM = %d\n", DesiredRPM);
 
-      // Serial.println("min500mstimer = ");
-      // Serial.println(min500mstimer);
+      // Serial.println("min1000mstimer = ");
+      // Serial.println(min1000mstimer);
       // digitalWrite(TOGGLEPIN2, toggle1);
       // toggle1 = !toggle1;
-      min500mstimer = 0;
+      min1000mstimer = 0;
       
 
       // =================================================Wagner Regler
@@ -461,7 +461,7 @@ void loop()
       //  drive.setDutyMotor(MOTORRIGHT, Stellwert);
       // =================================================
       // Serial.println(Controlvalueright);
-      // drive.IRegler(DesiredRPM, Controlvalueright, rightrpmValue);
+      // drive.TwoPointRegulator(DesiredRPM, Controlvalueright, rightrpmValue);
 
       Serial.printf("Controlvalueright(PWM): %d\n", Controlvalueright); //here
       Serial.printf("Controlvalueleft(PWM): %d\n", Controlvalueleft);   //here

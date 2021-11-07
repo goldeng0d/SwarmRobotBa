@@ -74,7 +74,7 @@ class Drive{
          * @param[in] high maximum output limit
          * @param[in] low minimum input limit
          */
-        int32_t IRAM_ATTR IRegler(const uint32_t Sollwertdrehzahl, volatile uint32_t Stellwert, const uint32_t Drehzahlvalue);
+        int32_t IRAM_ATTR TwoPointRegulator(const uint32_t Sollwertdrehzahl, volatile uint32_t Stellwert, const uint32_t Drehzahlvalue);
 
         int32_t IRAM_ATTR mapInteger(const float x, const float in_min, const float in_max, const float out_min, const float out_max);
 
