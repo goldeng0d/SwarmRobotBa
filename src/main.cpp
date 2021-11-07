@@ -10,10 +10,12 @@
 
 #define LOCAL_DEBUG 1
 #define TIMER_INTERRUPT_DEBUG 0
-#define TIMER0_INTERVAL_MS 50
+#define TIMER0_INTERVAL_MS 25
 #define TIMER0_INTERVAL_US 1000 * TIMER0_INTERVAL_MS
 #define TOGGLEPIN1 21
 #define TOGGLEPIN2 22
+#define STARTUPFACTORLEFT 2.2
+#define STARTUPFACTORRIGHT 2.1
 
 #define NUM_LEDS 4
 #define LEDPIN 23
@@ -286,8 +288,8 @@ void onCarInputWebSocketEvent(AsyncWebSocket *server,
         {
            drive.setDutyMotor(MOTORLEFT, 0);
            drive.setDutyMotor(MOTORRIGHT, 0);
-           Controlvalueleft = 2.2 * drive.minPWMvaluestartturn;
-           Controlvalueright = 1.69 * drive.minPWMvaluestartturn;
+           Controlvalueleft = (uint32_t)((float)STARTUPFACTORLEFT * (float)drive.minPWMvaluestartturn);
+           Controlvalueright = (uint32_t)((float)STARTUPFACTORRIGHT * (float)drive.minPWMvaluestartturn);
            leftrpmValue = 0;
            rightrpmValue = 0;
         }
@@ -373,8 +375,8 @@ void setup(){
   // drive.move(1);
 
   //Adjust Motor differences and start values for Motors here and in onCarInputWebSocketEvent (movement == 0)
-  Controlvalueleft = 2.2 * drive.minPWMvaluestartturn;  //~150 for resolution == 8bit, adjusting up for worse motor
-  Controlvalueright = 1.69 * drive.minPWMvaluestartturn; //~90 for resolution == 8bit, adjusting to match initial speed of motorleft
+  Controlvalueleft = STARTUPFACTORLEFT * drive.minPWMvaluestartturn;   //~150 for resolution == 8bit, adjusting up for worse motor
+  Controlvalueright = STARTUPFACTORRIGHT * drive.minPWMvaluestartturn; //~90 for resolution == 8bit, adjusting to match initial speed of motorleft
 
   // The above Ratio is calibrated Manually it could be automated by running a calibration in setup() 
   // where the calibration is done at a fixed RPM -> when both Motors are at the same RPM both Stellwert values can be taken to get that ratio
@@ -396,7 +398,7 @@ void loop()
   lastMillis = millis();
   min500mstimer += (timedifference * 1000);
   min5mstimer += (timedifference * 1000);
-  if (min5mstimer >= 50)
+  if (min5mstimer >= 25)
   {
     min5mstimer = 0;
     if (movement > 0) // while moving in any Direction
