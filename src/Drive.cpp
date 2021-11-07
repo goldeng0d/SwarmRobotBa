@@ -2,13 +2,104 @@
 #include "Drive.h"
 
 // settings made here -> later create a configuration header with defines
-myEncoder roboEncoder(50.0, 66.5, 1200, {4, 5}, {35, 34});
+myEncoder roboEncoder(50.0, 66.5, 12, {4, 5}, {35, 34});
 //myEncoder roboEncoder(50.0, 66.5, 1200, {4, 5}, {34, 35});
-L298N roboMotors(4000, 8, {17, 18, 16, 2} , {33, 32, 19, 1});
+L298N roboMotors(PWM_FREQUENCY, PWM_RESOLUTION, {17, 18, 16, 1}, {33, 32, 19, 2});
 //L298N roboMotors(4000, 8, {17, 18, 16, 2}, {32, 33, 19, 1});
 
-Drive::Drive(){
+unsigned long lastMillisecafterBoot = 0;
 
+Drive::Drive()
+{
+   
+   // Although more comfortable DO NOT USE SWITCH CASE HERE OR THE PROGRAM CRASHES
+   // This Look-up Table is a lot faster than the power function.
+   if(PWM_RESOLUTION == 8)
+   {
+      maxPWMvalue = 255; // 2^8 - 1
+      Adjustingstep = uint32_t(maxPWMvalue / 255);
+   }
+   else if (PWM_RESOLUTION == 10)
+   {
+      maxPWMvalue = 1023; // 2^10 - 1
+      Adjustingstep = uint32_t(maxPWMvalue / 255);
+   }
+   else if (PWM_RESOLUTION == 12)
+   {
+      maxPWMvalue = 4095; // 2^12 - 1
+      Adjustingstep = uint32_t(maxPWMvalue / 255);
+   }
+   else if (PWM_RESOLUTION == 14)
+   {
+      maxPWMvalue = 16383; // 2^14 - 1
+      Adjustingstep = uint32_t(maxPWMvalue / 255);
+   }
+   else if (PWM_RESOLUTION == 16)
+   {
+      maxPWMvalue = 65535; // 2^16 - 1
+      Adjustingstep = uint32_t(maxPWMvalue / 255);
+   }
+   else if (PWM_RESOLUTION == 1) //very uncommon to use uneven PWM_RESOLUTIONs but technically possible
+   {
+      maxPWMvalue = 1; // 2^1 - 1
+      Adjustingstep = uint32_t(maxPWMvalue / 255);
+   }
+   else if (PWM_RESOLUTION == 2)
+   {
+      maxPWMvalue = 3; // 2^2 - 1
+      Adjustingstep = uint32_t(maxPWMvalue / 255);
+   }
+   else if (PWM_RESOLUTION == 3)
+   {
+      maxPWMvalue = 7; // 2^3 - 1
+      Adjustingstep = uint32_t(maxPWMvalue / 255);
+   }
+   else if (PWM_RESOLUTION == 4)
+   {
+      maxPWMvalue = 15; // 2^4 - 1
+      Adjustingstep = uint32_t(maxPWMvalue / 255);
+   }
+   else if (PWM_RESOLUTION == 5)
+   {
+      maxPWMvalue = 31; // 2^5 - 1
+      Adjustingstep = uint32_t(maxPWMvalue / 255);
+   }
+   else if (PWM_RESOLUTION == 6)
+   {
+      maxPWMvalue = 63; // 2^6 - 1
+      Adjustingstep = uint32_t(maxPWMvalue / 255);
+   }
+   else if (PWM_RESOLUTION == 7)
+   {
+      maxPWMvalue = 127; // 2^7 - 1
+      Adjustingstep = uint32_t(maxPWMvalue / 255);
+   }
+   else if (PWM_RESOLUTION == 9)
+   {
+      maxPWMvalue = 511; // 2^9 - 1
+      Adjustingstep = uint32_t(maxPWMvalue / 255);
+   }
+   else if (PWM_RESOLUTION == 11)
+   {
+      maxPWMvalue = 2047; // 2^11 - 1
+      Adjustingstep = uint32_t(maxPWMvalue / 255);
+   }
+   else if (PWM_RESOLUTION == 13)
+   {
+      maxPWMvalue = 8191; // 2^13 - 1
+      Adjustingstep = uint32_t(maxPWMvalue / 255);
+   }
+   else if (PWM_RESOLUTION == 15)
+   {
+      maxPWMvalue = 32767; // 2^15 - 1
+      Adjustingstep = uint32_t(maxPWMvalue / 255);
+   }
+   else
+   {
+      Serial.println("Error PWM_RESOLUTION not supported.");
+   }
+   minPWMvaluestartturn = (int32_t((float)maxPWMvalue * MOTOR_LOWFRACTION_STARTTURN));
+   minPWMvalueturning = (int32_t((float)maxPWMvalue * MOTOR_LOWFRACTION_TURNING));
 }
 
 Drive::~Drive(){
@@ -45,16 +136,18 @@ void Drive::setspeed(const int velocity){
   roboMotors.changeSpeed(MOTORRIGHT, velocity);
 }
 
-void Drive::setspeedMotorLEFT(const int velocity)
+void Drive::setspeed(const unsigned int motoNum, const int velocity)
 {
-  // output motor speed
+
+  // output motor speeds
   roboMotors.changeSpeed(MOTORLEFT, velocity);
+  roboMotors.changeSpeed(MOTORRIGHT, velocity);
 }
 
-void Drive::setspeedMotorRIGHT(const int velocity)
+void IRAM_ATTR Drive::setDutyMotor(const unsigned int motoNum, const int duty)
 {
   // output motor speed
-  roboMotors.changeSpeed(MOTORRIGHT, velocity);
+  roboMotors.changeDuty(motoNum, duty);
 }
 
 void Drive::move(const int direction){
@@ -113,12 +206,12 @@ void Drive::update(double dT, const double vel, const double omega){
   if(v_l > 0){
     //roboEncoder.setCntDir(1);
     roboMotors.changeDirection(MOTORLEFT, motDirection::FORWARD);
-    vl_error = v_l - roboEncoder.encoder1.vel;
+    vl_error = v_l - roboEncoder.encoderLeft.vel;
 
   } else if(v_l < 0){
     //roboEncoder.setCntDir(1);
     roboMotors.changeDirection(MOTORLEFT, motDirection::BACKWARD);
-    vl_error = roboEncoder.encoder1.vel - v_l;
+    vl_error = roboEncoder.encoderLeft.vel - v_l;
 
   } else {
     roboMotors.changeDirection(MOTORLEFT, motDirection::BREAKING);
@@ -129,12 +222,12 @@ void Drive::update(double dT, const double vel, const double omega){
   if(v_r > 0){
     //roboEncoder.setCntDir(2);
     roboMotors.changeDirection(MOTORRIGHT, motDirection::FORWARD);
-    vr_error = v_r - roboEncoder.encoder1.vel;
+    vr_error = v_r - roboEncoder.encoderLeft.vel;
 
   } else if(v_r < 0){
     //roboEncoder.setCntDir(2);
     roboMotors.changeDirection(MOTORRIGHT, motDirection::BACKWARD);
-    vr_error = roboEncoder.encoder1.vel - v_r;
+    vr_error = roboEncoder.encoderLeft.vel - v_r;
     
   } else {
     roboMotors.changeDirection(MOTORRIGHT, motDirection::BREAKING);
@@ -164,33 +257,47 @@ void Drive::update(double dT, const double vel, const double omega){
 
 }
 
-int32_t Drive::getEncoderValueLEFT(void)
+int32_t IRAM_ATTR Drive::getEncoderValueLEFT(void)
 {
-  int32_t value = roboEncoder.readAndResetLEFT();
-  Serial.printf("readdriveleft = %d\n", value);
-  return (value);
+  return (roboEncoder.readAndResetLEFT());
 }
 
-int32_t Drive::getEncoderValueRIGHT(void)
+int32_t IRAM_ATTR Drive::getEncoderValueRIGHT(void)
 {
-  int32_t value = roboEncoder.readAndResetRIGHT();
-  Serial.printf("readdriveright = %d\n", value);
-  return (value);
+  return (roboEncoder.readAndResetRIGHT());
 }
 
-void Drive::rpmcontrol(int rpm){
-  int32_t leftEncoderValue = roboEncoder.readAndResetLEFT();
-  int32_t rightEncoderValue = roboEncoder.readAndResetRIGHT();
-  int32_t difference = leftEncoderValue - rightEncoderValue;
-  if (difference > 2){
-    setspeedMotorRIGHT(+2);
-  }
-  else if (difference < -2){  
-    setspeedMotorLEFT(-2);
-  }
-  else{
+int32_t IRAM_ATTR Drive::IRegler(const uint32_t Sollwertdrehzahl, volatile uint32_t Stellwert, const uint32_t Drehzahlvalue)
+{
 
-  }
-  return;
+   // maxPWMvalue = highest PWM value
+   // minPWMvalueturning = lowest PWM value while turning
 
+   // Increase Output DutyCycle if Sollwertdrehzahl > Drehzahlvalue but,
+   // maxPWMvalue to cap maximum Voltage, because PWM has a limit where DutyCycle = 100%
+   if (Sollwertdrehzahl > Drehzahlvalue && Stellwert + Adjustingstep <= maxPWMvalue)
+   {
+      Stellwert += Adjustingstep;
+   }
+   // Lower Output DutyCycle if Sollwertdrehzahl < Drehzahlvalue but,
+   // minPWMvalueturning to cap minimum Voltage, because if volatage to low on motor won't turn
+   else if (Sollwertdrehzahl < Drehzahlvalue && Stellwert - Adjustingstep > minPWMvalueturning)
+   {
+      Stellwert -= Adjustingstep;
+   }
+   return Stellwert;
+}
+
+int32_t IRAM_ATTR Drive::mapInteger(const float x, const float in_min, const float in_max, const float out_min, const float out_max)
+{
+   float result;
+   result = (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+   return (int32_t)result;
+}
+
+// Calculate the RPM from the encoder value and the time difference
+float IRAM_ATTR Drive::CalculateRPMfromEncoderValue(const int32_t encValue, const float dT)
+{
+   float ret = (((float)encValue / (float)ENCODER_COUNTS_PER_REVOLUTION_MOTORSIDE) / (dT / (float)MILLISEC_IN_SEC)) * (float)SEC_IN_MIN;
+   return ret;
 }

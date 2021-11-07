@@ -4,6 +4,9 @@
 
 
 #include <Arduino.h>
+#include "soc/ledc_reg.h"
+#include "soc/ledc_struct.h"
+#define LEDC_CHAN(g, c) LEDC.channel_group[(g)].channel[(c)]
 
 struct Motor_pins{
 
@@ -30,10 +33,10 @@ class L298N{
        * 
        * @param[in] frequency PWM Frequency - does not matter too much for L298N
        * @param[in] resolution resolution of dutycyle in bits 0 ... 2^(resolution)
-       * @param[in] mot1 Motor 1 configuration
-       * @param[in] mot2 Motor 2 configuration
+       * @param[in] motright Motor 1 configuration
+       * @param[in] motleft Motor 2 configuration
       */
-      L298N(const unsigned int frequency, const unsigned int resolution, const Motor_pins mot1, const Motor_pins mot2);
+      L298N(const unsigned int frequency, const unsigned int resolution, const Motor_pins motright, const Motor_pins motleft);
 
       /**
        * detatch PWM function from GPIO Pin matrix
@@ -41,12 +44,7 @@ class L298N{
       ~L298N();
 
       /**
-       * Constructor
-       * 
-       * @param[in] frequency PWM Frequency - does not matter too much for L298N
-       * @param[in] resolution resolution of dutycyle in bits 0 ... 2^(resolution)
-       * @param[in] mot1 Motor 1 configuration
-       * @param[in] mot2 Motor 2 configuration
+       * Setup PINS and PWM
       */
       void setup();
 
@@ -56,7 +54,7 @@ class L298N{
        * @param[in] motoNum Motor number A = 1 | B = 2
        * @param[in] duty dutycyle in bits 0 ... 2^(resolution)
       */
-      void changeDuty(const unsigned int motoNum, const unsigned int duty);
+      void IRAM_ATTR changeDuty(const unsigned int motoNum, const unsigned int duty);
 
       /**
        * Change speed of motor in percent from 0% to 100%
@@ -64,7 +62,7 @@ class L298N{
        * @param[in] motoNum Motor number A = 1 | B = 2
        * @param[in] percent motor speed percentage
       */
-      void changeSpeed(unsigned int motoNum, double percent);
+      int8_t changeSpeed(unsigned int motoNum, double percent);
 
       /**
        * Change rotational direction or disable motor by breaking
@@ -74,22 +72,7 @@ class L298N{
       */
       void changeDirection(unsigned int motoNum, motDirection direction);
 
-    private:
-      
-      // frequency of PWM
-      unsigned int frequency_;
-      // resolution in bits of PWM
-      unsigned int resolution_;
-
-      // Motor 1 Config
-      Motor_pins motor1;
-      // Motor 2 Config
-      Motor_pins motor2;
-
-      // Motor1 rotation direction
-      motDirection motor1_direction;
-      // Motor2 rotation direction
-      motDirection motor2_direction;
+      unsigned int getResolution();
 
       /**
        * map one value in range A one to range B
@@ -102,9 +85,24 @@ class L298N{
       */
       double mapDouble(double x, double in_min, double in_max, double out_min, double out_max);
 
+    private:
+      
+      // frequency of PWM
+      unsigned int frequency_;
+      // resolution in bits of PWM
+      unsigned int resolution_;
 
+      // Motor 1 Config
+      Motor_pins motorright;
+      // Motor 2 Config
+      Motor_pins motorleft;
 
+      // Motor1 rotation direction
+      motDirection motorright_direction;
+      // Motor2 rotation direction
+      motDirection motorleft_direction;
 
+      void IRAM_ATTR myledcWrite(uint8_t chan, uint32_t duty);
 };
 
 #endif

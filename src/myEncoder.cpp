@@ -3,21 +3,21 @@
 #define ENCODER_ARGLIST_SIZE 4+1
 
 static Encoder_internal_state_t *interruptArgs[ENCODER_ARGLIST_SIZE];
-void update(Encoder_internal_state_t *arg);
+void IRAM_ATTR update(Encoder_internal_state_t *arg);
 
 myEncoder::myEncoder(double rate, double wheelDiameter, unsigned long countsPerRevolution, myEncoder_pins enc1pin, myEncoder_pins enc2pin)
 {
   updateRate = rate;
 
-  encoder1.enc.encA = enc1pin.encA;
-  encoder1.enc.encB = enc1pin.encB;
-  encoder1.cntPerRev = countsPerRevolution;
-  encoder1.radius = ((wheelDiameter) / 2.0) / 1000.0; // diamter in mm to radius in m
+  encoderLeft.enc.encA = enc1pin.encA;
+  encoderLeft.enc.encB = enc1pin.encB;
+  encoderLeft.cntPerRev = countsPerRevolution;
+  encoderLeft.radius = ((wheelDiameter) / 2.0) / 1000.0; // diamter in mm to radius in m
 
-  encoder2.enc.encA = enc2pin.encA;
-  encoder2.enc.encB = enc2pin.encB;
-  encoder2.cntPerRev = countsPerRevolution;
-  encoder2.radius = ((wheelDiameter) / 2.0) / 1000.0; // diamter in mm to radius in m
+  encoderRight.enc.encA = enc2pin.encA;
+  encoderRight.enc.encB = enc2pin.encB;
+  encoderRight.cntPerRev = countsPerRevolution;
+  encoderRight.radius = ((wheelDiameter) / 2.0) / 1000.0; // diamter in mm to radius in m
 }
 
 myEncoder::~myEncoder(){
@@ -62,23 +62,23 @@ static void IRAM_ATTR ISR_enc4()
 
 void myEncoder::setup(){
   // set pins to output
-  pinMode(encoder1.enc.encA, INPUT_PULLUP);
-  pinMode(encoder1.enc.encB, INPUT_PULLUP);
-  pinMode(encoder2.enc.encA, INPUT_PULLUP);
-  pinMode(encoder2.enc.encB, INPUT_PULLUP);
+  pinMode(encoderLeft.enc.encA, INPUT_PULLUP);
+  pinMode(encoderLeft.enc.encB, INPUT_PULLUP);
+  pinMode(encoderRight.enc.encA, INPUT_PULLUP);
+  pinMode(encoderRight.enc.encB, INPUT_PULLUP);
 
 
-  libencoder1.pin1_register = (portInputRegister(digitalPinToPort(encoder1.enc.encA)));
-  libencoder1.pin1_bitmask = (digitalPinToBitMask(encoder1.enc.encA));
-  libencoder1.pin2_register = (portInputRegister(digitalPinToPort(encoder1.enc.encB)));
-  libencoder1.pin2_bitmask = (digitalPinToBitMask(encoder1.enc.encB));
-  libencoder1.position = 0;
+  libencoderLeft.pin1_register = (portInputRegister(digitalPinToPort(encoderLeft.enc.encA)));
+  libencoderLeft.pin1_bitmask = (digitalPinToBitMask(encoderLeft.enc.encA));
+  libencoderLeft.pin2_register = (portInputRegister(digitalPinToPort(encoderLeft.enc.encB)));
+  libencoderLeft.pin2_bitmask = (digitalPinToBitMask(encoderLeft.enc.encB));
+  libencoderLeft.position = 0;
 
-  libencoder2.pin1_register = (portInputRegister(digitalPinToPort(encoder2.enc.encA)));
-  libencoder2.pin1_bitmask = (digitalPinToBitMask(encoder2.enc.encA));
-  libencoder2.pin2_register = (portInputRegister(digitalPinToPort(encoder2.enc.encB)));
-  libencoder2.pin2_bitmask = (digitalPinToBitMask(encoder2.enc.encB));
-  libencoder2.position = 0;
+  libencoderRight.pin1_register = (portInputRegister(digitalPinToPort(encoderRight.enc.encA)));
+  libencoderRight.pin1_bitmask = (digitalPinToBitMask(encoderRight.enc.encA));
+  libencoderRight.pin2_register = (portInputRegister(digitalPinToPort(encoderRight.enc.encB)));
+  libencoderRight.pin2_bitmask = (digitalPinToBitMask(encoderRight.enc.encB));
+  libencoderRight.position = 0;
 
   // allow time for a passive R-C filter to charge
   // through the pullup resistors, before reading
@@ -86,27 +86,27 @@ void myEncoder::setup(){
   delayMicroseconds(2000);
   
   uint8_t statelibencoder1 = 0;
-  if ((((*(libencoder1.pin1_register)) & (libencoder1.pin1_bitmask)) ? 1 : 0)) statelibencoder1 |= 1;
-  if ((((*(libencoder1.pin2_register)) & (libencoder1.pin2_bitmask)) ? 1 : 0)) statelibencoder1 |= 2;
-  libencoder1.state = statelibencoder1;
+  if ((((*(libencoderLeft.pin1_register)) & (libencoderLeft.pin1_bitmask)) ? 1 : 0)) statelibencoder1 |= 1;
+  if ((((*(libencoderLeft.pin2_register)) & (libencoderLeft.pin2_bitmask)) ? 1 : 0)) statelibencoder1 |= 2;
+  libencoderLeft.state = statelibencoder1;
 
   uint8_t statelibencoder2 = 0;
-  if ((((*(libencoder2.pin1_register)) & (libencoder2.pin1_bitmask)) ? 1 : 0)) statelibencoder1 |= 1;
-  if ((((*(libencoder2.pin2_register)) & (libencoder2.pin2_bitmask)) ? 1 : 0)) statelibencoder1 |= 2;
-  libencoder2.state = statelibencoder2;
+  if ((((*(libencoderRight.pin1_register)) & (libencoderRight.pin1_bitmask)) ? 1 : 0)) statelibencoder1 |= 1;
+  if ((((*(libencoderRight.pin2_register)) & (libencoderRight.pin2_bitmask)) ? 1 : 0)) statelibencoder1 |= 2;
+  libencoderRight.state = statelibencoder2;
 
   // attatch an interrupt detector to 2 pins threough the hardware abstraction matrix
-  interruptArgs[1] = &libencoder1;
-  attachInterrupt(encoder1.enc.encA, ISR_enc1, CHANGE);
-  interruptArgs[2] = &libencoder1;
-  attachInterrupt(encoder1.enc.encB, ISR_enc2, CHANGE);
-  interruptArgs[3] = &libencoder2;
-  attachInterrupt(encoder2.enc.encA, ISR_enc3, CHANGE);
-  interruptArgs[4] = &libencoder2;
-  attachInterrupt(encoder2.enc.encB, ISR_enc4, CHANGE);
-  encoder1.counter = 0;
+  interruptArgs[1] = &libencoderLeft;
+  attachInterrupt(encoderLeft.enc.encA, ISR_enc1, CHANGE);
+  interruptArgs[2] = &libencoderLeft;
+  attachInterrupt(encoderLeft.enc.encB, ISR_enc2, CHANGE);
+  interruptArgs[3] = &libencoderRight;
+  attachInterrupt(encoderRight.enc.encA, ISR_enc3, CHANGE);
+  interruptArgs[4] = &libencoderRight;
+  attachInterrupt(encoderRight.enc.encB, ISR_enc4, CHANGE);
+  encoderLeft.counter = 0;
   //enclib1.write(0);
-  encoder2.counter = 0;
+  encoderRight.counter = 0;
   //enclib2.write(0);
 }
 
@@ -117,18 +117,37 @@ void myEncoder::myupdate(){
   if(dT > 1/updateRate){
 
     // update class member counter values
-    encoder1.counter = readAndResetRIGHT();
-    encoder2.counter = readAndResetLEFT();
+    encoderLeft.counter = readAndResetLEFT();
+    encoderRight.counter = readAndResetRIGHT();
 
     // calculate w, v, distance
-    calculateValues(encoder1, dT);
-    calculateValues(encoder2, dT);
+    calculateValues(encoderLeft, dT);
+    calculateValues(encoderRight, dT);
 
     previousMillis = millis();
   }
 
 }
 
+void myEncoder::myupdates()
+{
+
+  // measure elapsed time
+  double dT = (millis() - previousMillis) / 1000.0;
+  if (dT > 1 / updateRate)
+  {
+
+    // update class member counter values
+    encoderLeft.counter = readAndResetRIGHT();
+    encoderRight.counter = readAndResetLEFT();
+
+    // calculate w, v, distance
+    calculateValues(encoderLeft, dT);
+    calculateValues(encoderRight, dT);
+
+    previousMillis = millis();
+  }
+}
 
 void myEncoder::calculateValues(myEncoder_struct &encoder, double dT){
 
@@ -163,10 +182,10 @@ void myEncoder::calculateValues(myEncoder_struct &encoder, double dT){
 //   // this sensor can detect rotation direction by itself
 //   if(encoderNum == 1){
 
-//     if (encoder1.counter > 0){
+//     if (encoderLeft.counter > 0){
 //       cntDir1 = 1;
 //     }
-//     else if (encoder1.counter == 0)
+//     else if (encoderLeft.counter == 0)
 //     {
 //       cntDir1 = 0;
 //     }
@@ -176,11 +195,11 @@ void myEncoder::calculateValues(myEncoder_struct &encoder, double dT){
 //     }
 //   } else {
 
-//     if (encoder2.counter > 0)
+//     if (encoderRight.counter > 0)
 //     {
 //       cntDir2 = 1;
 //     }
-//     else if (encoder2.counter == 0)
+//     else if (encoderRight.counter == 0)
 //     {
 //       cntDir2 = 0;
 //     }
@@ -195,16 +214,16 @@ void myEncoder::calculateValues(myEncoder_struct &encoder, double dT){
 void myEncoder::printDistance(){
 
   Serial.print("\ndsit 1 ");
-  Serial.print(encoder1.distance);
+  Serial.print(encoderLeft.distance);
   Serial.print("\n   dsit 2 ");
-  Serial.println(encoder2.distance);
+  Serial.println(encoderRight.distance);
 }
 
 inline int32_t myEncoder::readRIGHT()
 {
   noInterrupts();
-  update(&libencoder1);
-  int32_t ret = libencoder1.position;
+  update(&libencoderLeft);
+  int32_t ret = libencoderLeft.position;
   interrupts();
   return ret;
 }
@@ -212,41 +231,42 @@ inline int32_t myEncoder::readRIGHT()
 inline int32_t myEncoder::readLEFT()
 {
   noInterrupts();
-  update(&libencoder2);
-  int32_t ret = libencoder2.position;
+  update(&libencoderRight);
+  int32_t ret = libencoderRight.position;
   interrupts();
   return ret;
 }
 
-int32_t myEncoder::readAndResetRIGHT(){
+int32_t myEncoder::readAndResetRIGHT()
+{
   noInterrupts();
-  update(&libencoder1);
-  int32_t ret = libencoder1.position;
-  libencoder1.position = 0;
-  interrupts();
+  update(&libencoderRight);
+  int32_t ret = libencoderLeft.position;
+  libencoderLeft.position = 0;
+  // interrupts();
   return ret;
 }
 
 int32_t myEncoder::readAndResetLEFT()
 {
   noInterrupts();
-  update(&libencoder2);
-  int32_t ret = libencoder2.position;
-  libencoder2.position = 0;
+  update(&libencoderLeft);
+  int32_t ret = libencoderRight.position;
+  libencoderRight.position = 0;
   interrupts();
   return ret;
 }
 
 inline void myEncoder::writeRIGHT(int32_t p){
   noInterrupts();
-  libencoder1.position = p;
+  libencoderLeft.position = p;
   interrupts();
 }
 
 inline void myEncoder::writeLEFT(int32_t p)
 {
   noInterrupts();
-  libencoder2.position = p;
+  libencoderRight.position = p;
   interrupts();
 }
 
@@ -276,7 +296,6 @@ inline void myEncoder::writeLEFT(int32_t p)
 //	1	1	1	1	no movement
 void update(Encoder_internal_state_t *arg)
 {
-
   uint8_t p1val = (((*(arg->pin1_register)) & (arg->pin1_bitmask)) ? 1 : 0);
   uint8_t p2val = (((*(arg->pin2_register)) & (arg->pin2_bitmask)) ? 1 : 0);
   uint8_t state = arg->state & 3;
@@ -285,7 +304,21 @@ void update(Encoder_internal_state_t *arg)
   if (p2val)
     state |= 8;
   arg->state = (state >> 2);
-  switch (state)
+  // Do **not** use switch-case statement here 
+  // The compiler emits a jump-table which is somehow (?!) still located
+  // in flash and thus can't be used in an ISR since everything has to be in IRAM or DRAM.
+  // this is actually bug-worthy to report.
+  // the code below does the same and does not crash.
+  if(state == 1 || state == 7 || state == 8 || state == 14) {
+      arg->position++;
+  } else if(state == 2 || state == 4 || state == 11 || state == 13){
+      arg->position--;
+  } else if(state == 3 || state == 12) {
+      arg->position += 2;
+  } else if(state == 6 || state == 9) {
+      arg->position -= 2;
+  }
+  /*switch (state)
   {
     case 1: case 7: case 8: case 14:
       arg->position++;
@@ -303,5 +336,5 @@ void update(Encoder_internal_state_t *arg)
       arg->position -= 2;
       //Serial.printf("position = %d\n", arg->position);
       return;
-  }
+  }*/
 }
