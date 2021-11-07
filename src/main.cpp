@@ -368,9 +368,9 @@ void setup(){
   pixels.begin();
   
   //For Testing without connecting to WIFI
-  speed = 14000;
-  movement = 1;
-  drive.move(1);
+  // speed = 14000;
+  // movement = 1;
+  // drive.move(1);
 
   //Adjust Motor differences and start values for Motors here and in onCarInputWebSocketEvent (movement == 0)
   Controlvalueleft = 2.2 * drive.minPWMvaluestartturn;  //~150 for resolution == 8bit, adjusting up for worse motor

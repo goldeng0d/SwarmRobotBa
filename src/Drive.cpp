@@ -3,9 +3,7 @@
 
 // settings made here -> later create a configuration header with defines
 myEncoder roboEncoder(50.0, 66.5, 12, {4, 5}, {35, 34});
-//myEncoder roboEncoder(50.0, 66.5, 1200, {4, 5}, {34, 35});
 L298N roboMotors(PWM_FREQUENCY, PWM_RESOLUTION, {17, 18, 16, 1}, {33, 32, 19, 2});
-//L298N roboMotors(4000, 8, {17, 18, 16, 2}, {32, 33, 19, 1});
 
 unsigned long lastMillisecafterBoot = 0;
 
@@ -17,82 +15,82 @@ Drive::Drive()
    if(PWM_RESOLUTION == 8)
    {
       maxPWMvalue = 255; // 2^8 - 1
-      Adjustingstep = uint32_t(maxPWMvalue / 255);
+      Adjustingstep = uint32_t(maxPWMvalue / 255); // set to fixed Adjustingstep for fast adjustinig
    }
    else if (PWM_RESOLUTION == 10)
    {
       maxPWMvalue = 1023; // 2^10 - 1
-      Adjustingstep = uint32_t(maxPWMvalue / 255);
+      Adjustingstep = uint32_t(maxPWMvalue / 255); // set to fixed Adjustingstep for fast adjustinig
    }
    else if (PWM_RESOLUTION == 12)
    {
       maxPWMvalue = 4095; // 2^12 - 1
-      Adjustingstep = uint32_t(maxPWMvalue / 255);
+      Adjustingstep = uint32_t(maxPWMvalue / 255); // set to fixed Adjustingstep for fast adjustinig
    }
    else if (PWM_RESOLUTION == 14)
    {
       maxPWMvalue = 16383; // 2^14 - 1
-      Adjustingstep = uint32_t(maxPWMvalue / 255);
+      Adjustingstep = uint32_t(maxPWMvalue / 255); // set to fixed Adjustingstep for fast adjustinig
    }
    else if (PWM_RESOLUTION == 16)
    {
       maxPWMvalue = 65535; // 2^16 - 1
-      Adjustingstep = uint32_t(maxPWMvalue / 255);
+      Adjustingstep = uint32_t(maxPWMvalue / 255); // set to fixed Adjustingstep for fast adjustinig
    }
    else if (PWM_RESOLUTION == 1) //very uncommon to use uneven PWM_RESOLUTIONs but technically possible
    {
       maxPWMvalue = 1; // 2^1 - 1
-      Adjustingstep = uint32_t(maxPWMvalue / 255);
+      Adjustingstep = uint32_t(maxPWMvalue / 255); // set to fixed Adjustingstep for fast adjustinig
    }
    else if (PWM_RESOLUTION == 2)
    {
       maxPWMvalue = 3; // 2^2 - 1
-      Adjustingstep = uint32_t(maxPWMvalue / 255);
+      Adjustingstep = uint32_t(maxPWMvalue / 255); // set to fixed Adjustingstep for fast adjustinig
    }
    else if (PWM_RESOLUTION == 3)
    {
       maxPWMvalue = 7; // 2^3 - 1
-      Adjustingstep = uint32_t(maxPWMvalue / 255);
+      Adjustingstep = uint32_t(maxPWMvalue / 255); // set to fixed Adjustingstep for fast adjustinig
    }
    else if (PWM_RESOLUTION == 4)
    {
       maxPWMvalue = 15; // 2^4 - 1
-      Adjustingstep = uint32_t(maxPWMvalue / 255);
+      Adjustingstep = uint32_t(maxPWMvalue / 255); // set to fixed Adjustingstep for fast adjustinig
    }
    else if (PWM_RESOLUTION == 5)
    {
       maxPWMvalue = 31; // 2^5 - 1
-      Adjustingstep = uint32_t(maxPWMvalue / 255);
+      Adjustingstep = uint32_t(maxPWMvalue / 255); // set to fixed Adjustingstep for fast adjustinig
    }
    else if (PWM_RESOLUTION == 6)
    {
       maxPWMvalue = 63; // 2^6 - 1
-      Adjustingstep = uint32_t(maxPWMvalue / 255);
+      Adjustingstep = uint32_t(maxPWMvalue / 255); // set to fixed Adjustingstep for fast adjustinig
    }
    else if (PWM_RESOLUTION == 7)
    {
       maxPWMvalue = 127; // 2^7 - 1
-      Adjustingstep = uint32_t(maxPWMvalue / 255);
+      Adjustingstep = uint32_t(maxPWMvalue / 255); // set to fixed Adjustingstep for fast adjustinig
    }
    else if (PWM_RESOLUTION == 9)
    {
       maxPWMvalue = 511; // 2^9 - 1
-      Adjustingstep = uint32_t(maxPWMvalue / 255);
+      Adjustingstep = uint32_t(maxPWMvalue / 255); // set to fixed Adjustingstep for fast adjustinig
    }
    else if (PWM_RESOLUTION == 11)
    {
       maxPWMvalue = 2047; // 2^11 - 1
-      Adjustingstep = uint32_t(maxPWMvalue / 255);
+      Adjustingstep = uint32_t(maxPWMvalue / 255); // set to fixed Adjustingstep for fast adjustinig
    }
    else if (PWM_RESOLUTION == 13)
    {
       maxPWMvalue = 8191; // 2^13 - 1
-      Adjustingstep = uint32_t(maxPWMvalue / 255);
+      Adjustingstep = uint32_t(maxPWMvalue / 255); // set to fixed Adjustingstep for fast adjustinig
    }
    else if (PWM_RESOLUTION == 15)
    {
       maxPWMvalue = 32767; // 2^15 - 1
-      Adjustingstep = uint32_t(maxPWMvalue / 255);
+      Adjustingstep = uint32_t(maxPWMvalue / 255); // set to fixed Adjustingstep for fast adjustinig
    }
    else
    {
