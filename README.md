@@ -9,7 +9,7 @@ Robot has to be build beforehand.
 
 1. Install Visual Studio Code -> [download](https://code.visualstudio.com/Download) (if not already installed)
 2. Install Python [download](https://www.python.org/downloads/) (if not already installed)
-3. Install Git [download](https://git-scm.com/downloads) (if not already installed)
+3. Install Git [download](https://git-scm.com/downloads) (if not already installed) and add it to the path in installing process.
 4. Start Visual Studio Code -> on the Left side of Visual Studio Code is a button Extensions click on it and search for platformIO ide and install it.
 5. open an explorer, navigate to the location you want this [Repo](https://github.com/goldeng0d/SwarmRobotBa.git) to be and open a **terminal/cmd** there. (easiest by clicking into the path and typing `cmd`)
 6. Go to the [Repo](https://github.com/goldeng0d/SwarmRobotBa.git) click on Code and Copy the Link ->  for the Repo
